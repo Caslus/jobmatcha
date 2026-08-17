@@ -304,7 +304,7 @@ func TestRolesAPI(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 		}
 
-		var resp RoleListResponse
+		var resp model.RoleListResponse
 		parseJSON(t, w.Body.String(), &resp)
 		if len(resp.Data) == 0 {
 			t.Fatal("expected at least 1 role")
@@ -331,7 +331,7 @@ func TestRolesAPI(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 		}
 
-		var resp RoleDetailResponse
+		var resp model.RoleDetailResponse
 		parseJSON(t, w.Body.String(), &resp)
 		if resp.Title != "Software Engineer" {
 			t.Errorf("expected 'Software Engineer', got '%s'", resp.Title)
@@ -392,7 +392,7 @@ func TestRolesAPI(t *testing.T) {
 		req2.AddCookie(&http.Cookie{Name: "session", Value: token})
 		router.ServeHTTP(w2, req2)
 
-		var resp RoleListResponse
+		var resp model.RoleListResponse
 		parseJSON(t, w2.Body.String(), &resp)
 		for _, r := range resp.Data {
 			if r.ID == role.ID {

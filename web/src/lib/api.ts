@@ -1,0 +1,91 @@
+import ky from "ky";
+import type {
+	AuthStatusResponse,
+	AuthTokenResponse,
+	RoleDetailResponse,
+	RoleListResponse,
+} from "@/types/api.gen";
+
+const API_BASE = "http://localhost:8181/api";
+
+function getToken(): string | null {
+	try {
+		return localStorage.getItem("jobmatcha_token");
+	} catch {
+		return null;
+	}
+}
+
+function setToken(token: string) {
+	try {
+		localStorage.setItem("jobmatcha_token", token);
+	} catch {
+		// localStorage unavailable
+	}
+}
+
+function clearToken() {
+	try {
+		localStorage.removeItem("jobmatcha_token");
+	} catch {
+		// localStorage unavailable
+	}
+}
+
+export const api = ky.create({
+	prefix: API_BASE,
+	headers: { "Content-Type": "application/json" },
+	hooks: {
+		beforeRequest: [
+			({ request }) => {
+				const token = getToken();
+				if (token) {
+					request.headers.set("Authorization", `Bearer ${token}`);
+				}
+			},
+		],
+	},
+});
+
+// Auth helpers
+export const authApi = {
+	login: async (password: string) => {
+		const res = await api
+			.post("auth/login", { json: { password } })
+			.json<AuthTokenResponse>();
+		setToken(res.token);
+		return res;
+	},
+
+	logout: async () => {
+		const res = await api.post("auth/logout").json();
+		clearToken();
+		return res;
+	},
+
+	status: () => api.get("auth/status").json<AuthStatusResponse>(),
+
+	changePassword: (currentPassword: string, newPassword: string) =>
+		api
+			.post("auth/change-password", {
+				json: { current_password: currentPassword, new_password: newPassword },
+			})
+			.json(),
+};
+
+// Roles
+export const rolesApi = {
+	list: (page = 1, perPage = 25) =>
+		api
+			.get("roles", {
+				searchParams: { page: String(page), per_page: String(perPage) },
+			})
+			.json<RoleListResponse>(),
+
+	getByID: (id: number) => api.get(`roles/${id}`).json<RoleDetailResponse>(),
+
+	patch: (
+		id: number,
+		updates: { is_hidden?: boolean; is_interested?: boolean },
+	) => api.patch(`roles/${id}`, { json: updates }).json(),
+};

@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
@@ -18,47 +17,6 @@ type RoleHandler struct {
 
 func NewRoleHandler(repos *repository.Repositories) *RoleHandler {
 	return &RoleHandler{repos: repos}
-}
-
-// RoleListItem is the response DTO for the role list.
-type RoleListItem struct {
-	ID             uint       `json:"id"`
-	CompanyID      uint       `json:"company_id"`
-	CompanyName    string     `json:"company_name"`
-	Title          string     `json:"title"`
-	Department     string     `json:"department"`
-	Location       string     `json:"location"`
-	PostedAt       *time.Time `json:"posted_at"`
-	RelevanceScore int        `json:"relevance_score"`
-	IsHidden       bool       `json:"is_hidden"`
-	IsInterested   bool       `json:"is_interested"`
-}
-
-type RoleListResponse struct {
-	Data       []RoleListItem `json:"data"`
-	Pagination PaginationInfo `json:"pagination"`
-}
-
-type PaginationInfo struct {
-	Total      int `json:"total"`
-	Page       int `json:"page"`
-	PerPage    int `json:"per_page"`
-	TotalPages int `json:"total_pages"`
-}
-
-type RoleDetailResponse struct {
-	ID             uint       `json:"id"`
-	CompanyID      uint       `json:"company_id"`
-	CompanyName    string     `json:"company_name"`
-	Title          string     `json:"title"`
-	Department     string     `json:"department"`
-	Location       string     `json:"location"`
-	Description    string     `json:"description"`
-	URL            string     `json:"url"`
-	PostedAt       *time.Time `json:"posted_at"`
-	RelevanceScore int        `json:"relevance_score"`
-	IsHidden       bool       `json:"is_hidden"`
-	IsInterested   bool       `json:"is_interested"`
 }
 
 // GET /api/roles
@@ -133,9 +91,9 @@ func (h *RoleHandler) List(c *gin.Context) {
 	paginated := visible[start:end]
 
 	// Build response
-	items := make([]RoleListItem, len(paginated))
+	items := make([]model.RoleListItem, len(paginated))
 	for i, sr := range paginated {
-		items[i] = RoleListItem{
+		items[i] = model.RoleListItem{
 			ID:             sr.Role.ID,
 			CompanyID:      sr.Role.CompanyID,
 			CompanyName:    sr.Role.Company.Name,
@@ -149,9 +107,9 @@ func (h *RoleHandler) List(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, RoleListResponse{
+	c.JSON(http.StatusOK, model.RoleListResponse{
 		Data: items,
-		Pagination: PaginationInfo{
+		Pagination: model.PaginationInfo{
 			Total:      total,
 			Page:       page,
 			PerPage:    perPage,
@@ -188,7 +146,7 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 		score = sr.Score
 	}
 
-	c.JSON(http.StatusOK, RoleDetailResponse{
+	c.JSON(http.StatusOK, model.RoleDetailResponse{
 		ID:             role.ID,
 		CompanyID:      role.CompanyID,
 		CompanyName:    role.Company.Name,

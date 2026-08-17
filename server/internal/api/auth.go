@@ -45,7 +45,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(cfg.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "invalid password"})
+		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Invalid password."})
 		return
 	}
 

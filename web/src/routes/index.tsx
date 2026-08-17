@@ -1,87 +1,93 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useLogin } from "../hooks/useApi";
+import { useAuthStore } from "../stores/auth";
 
-export const Route = createFileRoute('/')({ component: App })
+export const Route = createFileRoute("/")({
+	beforeLoad: () => {
+		const { authenticated } = useAuthStore.getState();
+		if (authenticated) {
+			throw redirect({ to: "/dashboard" });
+		}
+	},
+	component: LoginPage,
+});
 
-function App() {
-  return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          Start simple, ship quickly.
-        </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/about"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-          >
-            About This Starter
-          </a>
-          <a
-            href="https://tanstack.com/router"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-          >
-            Router Guide
-          </a>
-        </div>
-      </section>
+function LoginPage() {
+	const navigate = useNavigate();
+	const [password, setPassword] = useState("");
+	const { authenticated, loading, check } = useAuthStore();
+	const loginMutation = useLogin();
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            'Type-Safe Routing',
-            'Routes and links stay in sync across every page.',
-          ],
-          [
-            'Server Functions',
-            'Call server code from your UI without creating API boilerplate.',
-          ],
-          [
-            'Streaming by Default',
-            'Ship progressively rendered responses for faster experiences.',
-          ],
-          [
-            'Tailwind Native',
-            'Design quickly with utility-first styling and reusable tokens.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
-        ))}
-      </section>
+	useEffect(() => {
+		check().then(() => {
+			const state = useAuthStore.getState();
+			if (state.authenticated) {
+				navigate({ to: "/dashboard" });
+			}
+		});
+	}, []);
 
-      <section className="island-shell mt-8 rounded-2xl p-6">
-        <p className="island-kicker mb-2">Quick Start</p>
-        <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
-          <li>
-            Edit <code>src/routes/index.tsx</code> to customize the home page.
-          </li>
-          <li>
-            Update <code>src/components/Header.tsx</code> and{' '}
-            <code>src/components/Footer.tsx</code> for brand links.
-          </li>
-          <li>
-            Add routes in <code>src/routes</code> and tweak visual tokens in{' '}
-            <code>src/styles.css</code>.
-          </li>
-        </ul>
-      </section>
-    </main>
-  )
+	if (loading) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-[#080908]">
+				<div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7dba7a] border-t-transparent" />
+			</div>
+		);
+	}
+
+	if (authenticated) {
+		return null;
+	}
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		loginMutation.mutate(password);
+	};
+
+	const handleRetry = () => {
+		loginMutation.reset();
+		setPassword("");
+	};
+
+	return (
+		<div className="flex min-h-screen items-center justify-center bg-[#080908]">
+			<div className="w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl">
+				<div className="mb-8 text-center">
+					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7dba7a] to-[#4a7c4f] shadow-lg shadow-[#7dba7a]/20">
+						<span className="text-2xl">🍵</span>
+					</div>
+					<h1 className="text-2xl font-bold text-[#e8e8e8]">jobmatcha</h1>
+					<p className="mt-1 text-sm text-[#6a7a6a]">
+						Sign in to your dashboard
+					</p>
+				</div>
+
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div>
+						<input
+							type="password"
+							placeholder="Password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
+							autoFocus
+						/>
+					</div>
+
+					{loginMutation.isError && (
+						<p className="text-sm text-red-400">Invalid password.</p>
+					)}
+
+					<button
+						type="submit"
+						disabled={loginMutation.isPending || !password}
+						className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{loginMutation.isPending ? "Signing in..." : "Sign in"}
+					</button>
+				</form>
+			</div>
+		</div>
+	);
 }
