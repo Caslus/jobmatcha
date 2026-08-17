@@ -8,6 +8,7 @@ SERVER_PORT = "8181"
 DB_PATH = "data/app.db"
 
 [tasks]
-"Generate Typescript DTOs from Go models" = { run = "cd server && tygo generate" }
+"Generate TypeScript DTOs" = { run = "cd server && tygo generate" }
+"Build Go backend" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
 "Run Go backend" = { run = "cd server && go run cmd/api/main.go" }
 "Run Vite web app" = { run = "cd web && npm run dev" }

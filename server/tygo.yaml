@@ -1,0 +1,7 @@
+packages:
+  github.com/caslus/jobmatcha/internal/model:
+    config_path: .
+    output_path: ../web/src/types/api.gen.ts
+    # Only export structs with json tags (exclude GORM internals)
+    exclude:
+      - StringSlice
