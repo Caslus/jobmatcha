@@ -1,0 +1,13 @@
+[tools]
+go = "1.26.6"
+node = "26.7.0"
+
+[env]
+WEB_PORT = "8080"
+SERVER_PORT = "8181"
+DB_PATH = "data/app.db"
+
+[tasks]
+"Generate Typescript DTOs from Go models" = { run = "cd server && tygo generate" }
+"Run Go backend" = { run = "cd server && go run cmd/api/main.go" }
+"Run Vite web app" = { run = "cd web && npm run dev" }
