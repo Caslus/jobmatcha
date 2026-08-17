@@ -12,4 +12,4 @@ DB_PATH = "data/app.db"
 "Build Go backend" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
 "Run Go backend" = { run = "cd server && go run cmd/api/main.go" }
 "Run Go backend tests" = { run = "cd server && go test ./internal/api/ -v -count=1"}
-"Run Vite web app" = { run = "cd web && npm run dev" }
+"Run Vite web app" = { run = "cd web && pnpm run dev" }

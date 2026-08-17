@@ -24,7 +24,7 @@ You are a senior frontend engineer. All work in `/web` must follow modern React 
 - **HTTP Client (`src/lib/api.ts`):** Use `ky` for all HTTP requests with default JSON headers, base URLs, and auth token interceptors.
 - **Server State:** Use **TanStack Query (React Query)** for all queries and mutations.
 - **Client State:** Keep ephemeral UI state (e.g. active modal, search inputs) in local `useState` or lightweight Zustand stores.
-- **Form Handling:** Use **React Hook Form** + **Zod** for client-side form validation.
+- **Form Handling:** Use TanStack Form (`@tanstack/react-form`) with the Zod validator adapter (@tanstack/zod-form-adapter) for all user input flows. Wrap all form controls with `<form.Field>` and compose standard primitives from `src/components/ui/`.
 - **Testing:** Write unit/component tests using **Vitest** + React Testing Library under `__tests__` or co-located `.test.tsx` files.
 
 ---
