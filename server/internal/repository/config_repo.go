@@ -12,8 +12,8 @@ func NewConfigRepo(db *gorm.DB) *ConfigRepo { return &ConfigRepo{db: db} }
 // Get returns the single config row, creating it with defaults if it doesn't exist.
 func (r *ConfigRepo) Get() (*model.Config, error) {
 	var cfg model.Config
-	err := r.db.First(&cfg, 1).Error
-	if err == gorm.ErrRecordNotFound {
+	result := r.db.Where("id = 1").Find(&cfg)
+	if result.RowsAffected == 0 {
 		cfg = model.Config{
 			IncludeKeywords:  []string{},
 			ExcludeKeywords:  []string{},
@@ -23,10 +23,8 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 		if err := r.db.Create(&cfg).Error; err != nil {
 			return nil, err
 		}
-		return &cfg, nil
-	}
-	if err != nil {
-		return nil, err
+		// Re-fetch to get the auto-created fields
+		r.db.Where("id = 1").Find(&cfg)
 	}
 	return &cfg, nil
 }

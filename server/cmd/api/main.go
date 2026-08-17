@@ -60,7 +60,7 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
-	api.RegisterRoutes(r, repos)
+	api.RegisterRoutes(r, repos, db)
 
 	slog.Info("listening", "port", port, "db", dbPath)
 	if err := r.Run(":" + port); err != nil {
