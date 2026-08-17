@@ -28,50 +28,6 @@ func NewAuthHandler(cfgRepo *repository.ConfigRepo, db *gorm.DB) *AuthHandler {
 	return &AuthHandler{cfgRepo: cfgRepo, db: db}
 }
 
-// POST /api/auth/setup — one-time setup (only works when setup_complete=false)
-func (h *AuthHandler) Setup(c *gin.Context) {
-	var req model.SetupRequest
-	c.BindJSON(&req)
-
-	if len(req.Password) < 8 {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "password must be at least 8 characters"})
-		return
-	}
-
-	cfg, err := h.cfgRepo.Get()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	if cfg.SetupComplete {
-		c.JSON(http.StatusConflict, model.ErrorResponse{Error: "setup already completed"})
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	cfg.PasswordHash = string(hash)
-	cfg.SetupComplete = true
-	if err := h.cfgRepo.Update(cfg); err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	token, err := h.createSession()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	setSessionCookie(c, token)
-	c.JSON(http.StatusOK, model.AuthTokenResponse{Token: token})
-}
-
 // POST /api/auth/login
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
@@ -85,11 +41,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	cfg, err := h.cfgRepo.Get()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	if !cfg.SetupComplete {
-		c.JSON(http.StatusPreconditionFailed, model.ErrorResponse{Error: "setup not completed"})
 		return
 	}
 
@@ -173,6 +124,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	}
 
 	cfg.PasswordHash = string(hash)
+	cfg.SetupComplete = true
 	if err := h.cfgRepo.Update(cfg); err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
 		return
@@ -221,14 +173,8 @@ func clearSessionCookie(c *gin.Context) {
 }
 
 // Authenticated returns the auth middleware.
-func Authenticated(cfgRepo *repository.ConfigRepo, db *gorm.DB) gin.HandlerFunc {
+func Authenticated(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cfg, err := cfgRepo.Get()
-		if err != nil || !cfg.SetupComplete {
-			c.AbortWithStatusJSON(http.StatusPreconditionFailed, model.ErrorResponse{Error: "setup not completed"})
-			return
-		}
-
 		token := extractToken(c)
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "not authenticated"})

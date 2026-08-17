@@ -5,6 +5,7 @@ import "time"
 type Role struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	CompanyID   uint      `gorm:"not null;index" json:"company_id"`
+	Company     Company   `gorm:"foreignKey:CompanyID" json:"company"`
 	URLHash     string    `gorm:"uniqueIndex:idx_company_url;not null;size:64" json:"-"`
 	URL         string    `gorm:"not null;size:1024" json:"url"`
 	Title       string    `gorm:"not null;size:512" json:"title"`

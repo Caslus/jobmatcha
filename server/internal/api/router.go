@@ -8,20 +8,23 @@ import (
 
 func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) {
 	auth := NewAuthHandler(repos.Config, db)
+	roles := NewRoleHandler(repos)
 
-	// Public routes
+	// Public routes (only what's needed before auth)
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 	r.POST("/api/auth/login", auth.Login)
-	r.POST("/api/auth/setup", auth.Setup)
-	r.POST("/api/auth/logout", auth.Logout)
-	r.GET("/api/auth/status", auth.Status)
 
 	// Protected routes
 	protected := r.Group("/api")
-	protected.Use(Authenticated(repos.Config, db))
+	protected.Use(Authenticated(db))
 	{
+		protected.POST("/auth/logout", auth.Logout)
+		protected.GET("/auth/status", auth.Status)
 		protected.POST("/auth/change-password", auth.ChangePassword)
+		protected.GET("/roles", roles.List)
+		protected.GET("/roles/:id", roles.GetByID)
+		protected.PATCH("/roles/:id", roles.Patch)
 	}
 }

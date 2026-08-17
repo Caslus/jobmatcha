@@ -21,10 +21,19 @@ func (r *RoleRepo) List(page, perPage int) ([]model.Role, int64, error) {
 	return roles, total, nil
 }
 
+func (r *RoleRepo) ListAll() ([]model.Role, error) {
+	var roles []model.Role
+	if err := r.db.Preload("Company").Order("created_at DESC").Find(&roles).Error; err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
+
 func (r *RoleRepo) GetByID(id uint) (*model.Role, error) {
 	var role model.Role
-	if err := r.db.Preload("Company").First(&role, id).Error; err != nil {
-		return nil, err
+	result := r.db.Preload("Company").Where("id = ?", id).Find(&role)
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &role, nil
 }

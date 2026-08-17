@@ -2,8 +2,11 @@ package repository
 
 import (
 	"github.com/caslus/jobmatcha/internal/model"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+const defaultBcryptCost = 12
 
 type ConfigRepo struct{ db *gorm.DB }
 
@@ -14,7 +17,13 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 	var cfg model.Config
 	result := r.db.Where("id = 1").Find(&cfg)
 	if result.RowsAffected == 0 {
+		hash, err := bcrypt.GenerateFromPassword([]byte("admin"), defaultBcryptCost)
+		if err != nil {
+			return nil, err
+		}
 		cfg = model.Config{
+			PasswordHash:     string(hash),
+			SetupComplete:    false,
 			IncludeKeywords:  []string{},
 			ExcludeKeywords:  []string{},
 			LocationKeywords: []string{},
@@ -23,7 +32,6 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 		if err := r.db.Create(&cfg).Error; err != nil {
 			return nil, err
 		}
-		// Re-fetch to get the auto-created fields
 		r.db.Where("id = 1").Find(&cfg)
 	}
 	return &cfg, nil

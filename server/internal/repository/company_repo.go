@@ -27,8 +27,9 @@ func (r *CompanyRepo) ListAll() ([]model.Company, error) {
 
 func (r *CompanyRepo) GetByID(id uint) (*model.Company, error) {
 	var company model.Company
-	if err := r.db.First(&company, id).Error; err != nil {
-		return nil, err
+	result := r.db.Where("id = ?", id).Find(&company)
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &company, nil
 }
