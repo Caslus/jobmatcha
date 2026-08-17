@@ -1,0 +1,29 @@
+# -- Go --
+server/dist/
+server/data/
+server/*.exe
+server/*.test
+server/*.out
+
+# -- Frontend --
+web/node_modules/
+web/dist/
+web/.astro/
+
+# -- Environment --
+.env
+.env.local
+
+# -- IDE --
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# -- OS --
+.DS_Store
+Thumbs.db
+
+# -- Misc --
+*.log
