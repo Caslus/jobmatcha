@@ -16,7 +16,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 		return (
 			<aside className="w-full h-full overflow-y-auto">
 				<div className="flex h-full items-center justify-center text-[#4a5a4a]">
-					<p className="text-xs">Select a role to view details</p>
+					<p className="text-sm">Select a role to view details</p>
 				</div>
 			</aside>
 		);
@@ -35,17 +35,17 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 			<div className="p-6">
 				<button
 					onClick={onBack}
-					className="mb-4 text-xs text-[#6a7a6a] transition hover:text-[#e8e8e8]"
+					className="mb-4 text-sm text-[#6a7a6a] transition hover:text-[#e8e8e8]"
 				>
 					← Back to list
 				</button>
 
 				<div className="mb-6">
-					<p className="text-xs text-[#6a7a6a]">{role.company_name}</p>
+					<p className="text-sm text-[#6a7a6a]">{role.company_name}</p>
 					<h3 className="mt-1 text-lg font-bold text-[#e8e8e8]">
 						{role.title}
 					</h3>
-					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#6a7a6a]">
+					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[#6a7a6a]">
 						<span className="flex items-center gap-1">{role.location}</span>
 						<span
 							className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-semibold ${scoreColor(role.match_percent)}`}
@@ -60,7 +60,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 						<button
 							onClick={handleToggleInterested}
 							disabled={patchRole.isPending}
-							className={`flex-1 rounded-lg border px-4 py-2 text-xs font-medium transition ${
+							className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
 								role.is_interested
 									? "border-[#7dba7a] bg-[#7dba7a]/10 text-[#7dba7a]"
 									: "border-[#2a3a2a] text-[#6a7a6a] hover:border-[#7dba7a]/50 hover:text-[#7dba7a]"
@@ -75,7 +75,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 						<button
 							onClick={handleToggleHidden}
 							disabled={patchRole.isPending}
-							className="flex-1 rounded-lg border border-[#2a3a2a] px-4 py-2 text-xs font-medium text-[#6a7a6a] transition hover:border-red-400/50 hover:text-red-400"
+							className="flex-1 rounded-lg border border-[#2a3a2a] px-4 py-2 text-sm font-medium text-[#6a7a6a] transition hover:border-red-400/50 hover:text-red-400"
 						>
 							{role.is_hidden ? "Unhide" : "Hide"}
 						</button>
@@ -90,7 +90,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 								href={role.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="break-all text-xs text-[#7dba7a] transition hover:underline"
+								className="break-all text-sm text-[#7dba7a] transition hover:underline"
 							>
 								{role.url}
 							</a>
@@ -101,14 +101,14 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 						<p className="mb-2 text-xs font-medium text-[#6a7a6a]">
 							Description
 						</p>
-						<p className="text-xs leading-relaxed text-[#9a9a9a]">
+						<p className="text-sm leading-relaxed text-[#9a9a9a]">
 							{role.description || "No description loaded"}
 						</p>
 					</div>
 				</div>
 			</div>
-		</aside>
-	);
+	</aside>
+	)
 }
 
 function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
@@ -170,7 +170,7 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 							break;
 					}
 					return (
-						<div key={r} className="flex items-center justify-between text-xs">
+						<div key={r} className="flex items-center justify-between text-sm">
 							<div className="flex items-center gap-1.5">
 								<Icon size={11} className={color} />
 								<span className="text-[#c8c8c8]">
@@ -189,7 +189,7 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 				})}
 			</div>
 
-			<div className="space-y-1 text-xs text-[#9a9a9a]">
+			<div className="space-y-1 text-sm text-[#9a9a9a]">
 				<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
 					<span>Include score</span>
 					<span className="text-[#c8c8c8] font-medium">
@@ -234,10 +234,10 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 						style={{ width: `${d.percent}%` }}
 					/>
 				</div>
-				<span className="text-[10px] text-[#6a7a6a]">
+				<span className="text-sm text-[#6a7a6a]">
 					{d.matched_keywords}/{d.total_keywords} keywords
 				</span>
 			</div>
-		</div>
-	);
+	</div>
+	)
 }

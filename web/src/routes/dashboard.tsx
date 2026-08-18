@@ -34,7 +34,7 @@ function loadState(): {
 				collapsedRight: right === 0,
 			};
 		}
-	} catch {}
+	} catch { }
 	return {
 		leftPct: DEFAULT_LEFT,
 		rightPct: DEFAULT_RIGHT,
@@ -46,7 +46,7 @@ function loadState(): {
 function saveState(left: number, right: number) {
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, right }));
-	} catch {}
+	} catch { }
 }
 
 export const Route = createFileRoute("/dashboard")({
@@ -79,7 +79,7 @@ function DashboardPage() {
 	const handleLogout = async () => {
 		try {
 			await authApi.logout();
-		} catch {}
+		} catch { }
 		useAuthStore.getState().logout();
 		window.location.href = "/";
 	};
@@ -177,7 +177,7 @@ function DashboardPage() {
 						className="w-px shrink-0 relative cursor-col-resize bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors self-stretch"
 						onMouseDown={onMouseDown("left")}
 					>
-						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-6 bg-[#4a5a4a]" />
+						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-[#4a5a4a]" />
 					</div>
 				)}
 
@@ -200,7 +200,7 @@ function DashboardPage() {
 						className="w-px shrink-0 relative cursor-col-resize bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors self-stretch"
 						onMouseDown={onMouseDown("right")}
 					>
-						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-6 bg-[#4a5a4a]" />
+						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-[#4a5a4a]" />
 					</div>
 				)}
 
@@ -369,17 +369,16 @@ function PreferencesPanel() {
 		<aside className="flex h-full flex-col">
 			<div className="flex-1 overflow-y-auto p-4">
 				<div className="mb-5 flex items-center justify-between">
-					<h3 className="text-xs font-semibold uppercase tracking-wider text-[#6a7a6a]">
+					<h3 className="text-sm font-semibold uppercase tracking-wider text-[#6a7a6a]">
 						Preferences
 					</h3>
 					<button
 						onClick={handleApply}
 						disabled={!hasChanges || applyFeedback === "saving"}
-						className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${
-							hasChanges && applyFeedback !== "saving"
-								? "bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] text-[#080908] hover:from-[#8dca8a] hover:to-[#6a9f6a]"
-								: "cursor-not-allowed bg-[#1a2a1a] text-[#4a5a4a]"
-						}`}
+						className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${hasChanges && applyFeedback !== "saving"
+							? "bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] text-[#080908] hover:from-[#8dca8a] hover:to-[#6a9f6a]"
+							: "cursor-not-allowed bg-[#1a2a1a] text-[#4a5a4a]"
+							}`}
 					>
 						{applyFeedback === "saving"
 							? "Saving..."
@@ -469,7 +468,7 @@ function PreferencesPanel() {
 					/>
 
 					<div>
-						<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+						<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 							Work Type
 						</label>
 						<div className="flex flex-wrap gap-1.5">
@@ -478,11 +477,10 @@ function PreferencesPanel() {
 								onClick={() =>
 									setDraft((prev) => (prev ? { ...prev, workTypes: [] } : prev))
 								}
-								className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${
-									display.workTypes.length === 0
-										? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
-										: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
-								}`}
+								className={`rounded-full border px-2.5 py-1 text-sm font-medium transition-all duration-150 ${display.workTypes.length === 0
+									? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
+									: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
+									}`}
 							>
 								Any
 							</button>
@@ -496,19 +494,18 @@ function PreferencesPanel() {
 											setDraft((prev) =>
 												prev
 													? {
-															...prev,
-															workTypes: selected
-																? prev.workTypes.filter((x) => x !== t)
-																: [...prev.workTypes, t],
-														}
+														...prev,
+														workTypes: selected
+															? prev.workTypes.filter((x) => x !== t)
+															: [...prev.workTypes, t],
+													}
 													: prev,
 											)
 										}
-										className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${
-											selected
-												? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
-												: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
-										}`}
+										className={`rounded-full border px-2.5 py-1 text-sm font-medium transition-all duration-150 ${selected
+											? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
+											: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
+											}`}
 									>
 										{t === "full-time"
 											? "Full-time"
@@ -584,7 +581,7 @@ function KeywordSection({
 	const c = chipColors[highlight];
 	return (
 		<div>
-			<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+			<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 				{label}
 			</label>
 			{showInput && (
@@ -600,14 +597,14 @@ function KeywordSection({
 			)}
 			<div className="flex flex-wrap gap-1.5">
 				{keywords.length === 0 ? (
-					<span className="text-[10px] text-[#3a4a3a]">None set</span>
+					<span className="text-xs text-[#3a4a3a]">None set</span>
 				) : (
 					keywords.map((kw) => (
 						<button
 							key={kw}
 							type="button"
 							onClick={() => onChipClick(kw, field)}
-							className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${markedForDelete.has(kw) ? `${c.marked} line-through` : `${c.base} ${c.hover}`}`}
+							className={`rounded-full border px-2.5 py-1 text-sm font-medium transition-all duration-150 ${markedForDelete.has(kw) ? `${c.marked} line-through` : `${c.base} ${c.hover}`}`}
 						>
 							{kw}
 						</button>
@@ -617,7 +614,7 @@ function KeywordSection({
 					<button
 						type="button"
 						onClick={onAddInput}
-						className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-[#5a6a5a] transition hover:border-[rgba(255,255,255,0.18)] hover:text-[#8a9a8a]"
+						className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-sm text-[#5a6a5a] transition hover:border-[rgba(255,255,255,0.18)] hover:text-[#8a9a8a]"
 					>
 						<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
 							<path

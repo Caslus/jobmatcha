@@ -74,7 +74,7 @@ export function ScanStatusBar() {
 		<>
 			<div className="border-t border-[#1a2a1a] p-3 space-y-2">
 				<div className="flex items-center justify-between">
-					<span className="text-[10px] font-medium uppercase tracking-wider text-[#4a5a4a]">
+					<span className="text-sm font-medium uppercase tracking-wider text-[#4a5a4a]">
 						Last Scan
 					</span>
 					<button
@@ -82,12 +82,12 @@ export function ScanStatusBar() {
 						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
 						title="Scheduled scan settings"
 					>
-						<Settings size={12} />
+						<Settings size={16} />
 					</button>
 				</div>
 
 				{lastScan ? (
-					<div className="text-[10px] text-[#6a7a6a] leading-relaxed">
+					<div className="text-xs text-[#6a7a6a] leading-relaxed">
 						{lastScan.status === "completed" ? (
 							<>
 								<p className="text-[#9a9a9a] font-medium">
@@ -117,7 +117,7 @@ export function ScanStatusBar() {
 						) : null}
 					</div>
 				) : (
-					<p className="text-[10px] text-[#3a4a3a]">Never scanned</p>
+					<p className="text-xs text-[#3a4a3a]">Never scanned</p>
 				)}
 
 				{/* Progress bar */}
@@ -131,7 +131,7 @@ export function ScanStatusBar() {
 								}}
 							/>
 						</div>
-						<p className="mt-1 text-[10px] text-[#4a5a4a] text-right">
+						<p className="mt-1 text-xs text-[#4a5a4a] text-right">
 							{scanJob.completed_companies}/{scanJob.total_companies} companies
 						</p>
 					</div>
@@ -140,7 +140,7 @@ export function ScanStatusBar() {
 				<button
 					onClick={startScan}
 					disabled={scanning}
-					className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-[11px] font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+					className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{scanning ? "Scanning..." : "New scan"}
 				</button>

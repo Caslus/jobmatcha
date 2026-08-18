@@ -20,7 +20,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 		<main className="flex flex-1 flex-col overflow-hidden">
 			<div className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
 				<div className="flex items-center gap-2">
-					<h2 className="text-sm font-semibold">Roles</h2>
+					<h2 className="text-base font-semibold">Roles</h2>
 					<span className="rounded-full bg-[#1a2a1a] px-2 py-0.5 text-xs text-[#6a7a6a]">
 						{total}
 					</span>
@@ -42,13 +42,15 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					</div>
 				) : roles.length === 0 ? (
 					<div className="flex h-full flex-col items-center justify-center text-[#4a5a4a]">
-						<p className="text-sm">No roles found</p>
+						<p className="text-base">No roles found</p>
 						<p className="mt-1 text-xs">Run a scan to find jobs</p>
 					</div>
 				) : (
 					<div className="space-y-1 p-2">
-						{roles.map((role) => (
-							<button
+						{roles.map(
+							(role) =>
+								(
+									<button
 								key={role.id}
 								onClick={() => onSelect(role.id)}
 								className={`w-full rounded-xl border px-4 py-3 text-left transition ${
@@ -62,7 +64,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 										<p className="truncate text-sm font-medium text-[#e8e8e8]">
 											{role.title}
 										</p>
-										<p className="mt-0.5 text-xs text-[#6a7a6a]">
+										<p className="mt-0.5 text-sm text-[#6a7a6a]">
 											{role.company_name}
 											{role.location && (
 												<>
@@ -71,14 +73,14 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 												</>
 											)}
 										</p>
-										<p className="mt-1 flex items-center gap-1 text-[10px] text-[#4a5a4a]">
+										<p className="mt-1 flex items-center gap-1 text-xs text-[#4a5a4a]">
 											<Clock size={10} />
 											{timeAgo(role.posted_at)}
 										</p>
 									</div>
 									<div className="flex flex-col items-end gap-1">
 										<span
-											className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold ${scoreColor(role.match_percent ?? 0)}`}
+											className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-sm font-semibold ${scoreColor(role.match_percent ?? 0)}`}
 										>
 											{matchLabel(role.match_percent ?? 0)}
 										</span>
@@ -92,7 +94,8 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 									</div>
 								</div>
 							</button>
-						))}
+								),
+						)}
 					</div>
 				)}
 			</div>
@@ -102,7 +105,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					<button
 						onClick={() => setPage((p) => Math.max(1, p - 1))}
 						disabled={page <= 1}
-						className="rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+						className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
 					>
 						Previous
 					</button>
@@ -112,7 +115,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					<button
 						onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
 						disabled={page >= totalPages}
-						className="rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+						className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
 					>
 						Next
 					</button>
