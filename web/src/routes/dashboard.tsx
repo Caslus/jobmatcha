@@ -1,12 +1,53 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { RoleDetailPanel } from "../features/jobs/RoleDetailPanel";
 import { RoleList } from "../features/jobs/RoleList";
 import { ScanStatusBar } from "../features/scan/ScanStatusBar";
 import { useSettings, useUpdateSettings } from "../hooks/useApi";
 import { authApi } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
+
+const STORAGE_KEY = "jobmatcha_panel_widths";
+const MIN_PCT = 10;
+const COLLAPSE_THRESHOLD = 8;
+const MAX_PCT = 80;
+const DEFAULT_LEFT = 20;
+const DEFAULT_RIGHT = 40;
+
+function loadState(): {
+	leftPct: number;
+	rightPct: number;
+	collapsedLeft: boolean;
+	collapsedRight: boolean;
+} {
+	try {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			const data = JSON.parse(saved);
+			const left = Math.max(0, Math.min(MAX_PCT, data.left ?? DEFAULT_LEFT));
+			const right = Math.max(0, Math.min(MAX_PCT, data.right ?? DEFAULT_RIGHT));
+			return {
+				leftPct: left || DEFAULT_LEFT,
+				rightPct: right || DEFAULT_RIGHT,
+				collapsedLeft: left === 0,
+				collapsedRight: right === 0,
+			};
+		}
+	} catch {}
+	return {
+		leftPct: DEFAULT_LEFT,
+		rightPct: DEFAULT_RIGHT,
+		collapsedLeft: false,
+		collapsedRight: false,
+	};
+}
+
+function saveState(left: number, right: number) {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, right }));
+	} catch {}
+}
 
 export const Route = createFileRoute("/dashboard")({
 	beforeLoad: () => {
@@ -20,6 +61,13 @@ function DashboardPage() {
 	const navigate = useNavigate();
 	const { check } = useAuthStore();
 	const [selectedId, setSelectedId] = useState<number | null>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const init = loadState();
+	const [leftPct, setLeftPct] = useState(init.leftPct);
+	const [rightPct, setRightPct] = useState(init.rightPct);
+	const [collapsedLeft, setCollapsedLeft] = useState(init.collapsedLeft);
+	const [collapsedRight, setCollapsedRight] = useState(init.collapsedRight);
+	const dragging = useRef<"left" | "right" | null>(null);
 
 	useEffect(() => {
 		check().then(() => {
@@ -36,6 +84,58 @@ function DashboardPage() {
 		window.location.href = "/";
 	};
 
+	const onMouseDown = useCallback(
+		(side: "left" | "right") => (e: React.MouseEvent) => {
+			e.preventDefault();
+			dragging.current = side;
+			document.body.style.cursor = "col-resize";
+			document.body.style.userSelect = "none";
+		},
+		[],
+	);
+
+	useEffect(() => {
+		const onMove = (e: MouseEvent) => {
+			if (!dragging.current || !containerRef.current) return;
+			const rect = containerRef.current.getBoundingClientRect();
+			const pct = ((e.clientX - rect.left) / rect.width) * 100;
+			if (dragging.current === "left") {
+				const maxLeft = 100 - rightPct - MIN_PCT;
+				if (pct < COLLAPSE_THRESHOLD) {
+					setCollapsedLeft(true);
+					setLeftPct(0);
+				} else {
+					setCollapsedLeft(false);
+					setLeftPct(Math.max(MIN_PCT, Math.min(maxLeft, pct)));
+				}
+			} else {
+				const rightEdge = 100 - pct;
+				const maxRight = 100 - leftPct - MIN_PCT;
+				if (rightEdge < COLLAPSE_THRESHOLD) {
+					setCollapsedRight(true);
+					setRightPct(0);
+				} else {
+					setCollapsedRight(false);
+					setRightPct(Math.max(MIN_PCT, Math.min(maxRight, rightEdge)));
+				}
+			}
+		};
+		const onUp = () => {
+			if (dragging.current) {
+				dragging.current = null;
+				document.body.style.cursor = "";
+				document.body.style.userSelect = "";
+				saveState(leftPct, rightPct);
+			}
+		};
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+		return () => {
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+	}, [leftPct, rightPct]);
+
 	return (
 		<div className="flex h-screen flex-col bg-[#080908] text-[#e8e8e8]">
 			<header className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
@@ -45,23 +145,73 @@ function DashboardPage() {
 					</div>
 					<span className="text-lg font-bold text-[#e8e8e8]">jobmatcha</span>
 				</div>
-				<div className="flex items-center gap-4">
-					<button
-						onClick={handleLogout}
-						className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
-					>
-						<LogOut size={14} /> Logout
-					</button>
-				</div>
+				<button
+					onClick={handleLogout}
+					className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
+				>
+					<LogOut size={14} /> Logout
+				</button>
 			</header>
 
-			<div className="flex flex-1 overflow-hidden">
-				<PreferencesPanel />
+			<div ref={containerRef} className="flex flex-1 overflow-hidden">
+				{!collapsedLeft && (
+					<div style={{ width: `${leftPct}%` }} className="shrink-0 min-w-0">
+						<PreferencesPanel />
+					</div>
+				)}
+
+				{collapsedLeft ? (
+					<button
+						onClick={() => {
+							setCollapsedLeft(false);
+							setLeftPct(DEFAULT_LEFT);
+							saveState(DEFAULT_LEFT, rightPct);
+						}}
+						className="w-5 shrink-0 flex items-center justify-center self-stretch bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors cursor-pointer"
+						title="Show preferences"
+					>
+						<ChevronRight size={12} className="text-[#6a7a6a]" />
+					</button>
+				) : (
+					<div
+						className="w-px shrink-0 relative cursor-col-resize bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors self-stretch"
+						onMouseDown={onMouseDown("left")}
+					>
+						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-6 bg-[#4a5a4a]" />
+					</div>
+				)}
+
 				<RoleList selectedId={selectedId} onSelect={setSelectedId} />
-				<RoleDetailPanel
-					selectedId={selectedId}
-					onBack={() => setSelectedId(null)}
-				/>
+
+				{collapsedRight ? (
+					<button
+						onClick={() => {
+							setCollapsedRight(false);
+							setRightPct(DEFAULT_RIGHT);
+							saveState(leftPct, DEFAULT_RIGHT);
+						}}
+						className="w-5 shrink-0 flex items-center justify-center self-stretch bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors cursor-pointer"
+						title="Show details"
+					>
+						<ChevronLeft size={12} className="text-[#6a7a6a]" />
+					</button>
+				) : (
+					<div
+						className="w-px shrink-0 relative cursor-col-resize bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors self-stretch"
+						onMouseDown={onMouseDown("right")}
+					>
+						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-6 bg-[#4a5a4a]" />
+					</div>
+				)}
+
+				{!collapsedRight && (
+					<div style={{ width: `${rightPct}%` }} className="shrink-0 min-w-0">
+						<RoleDetailPanel
+							selectedId={selectedId}
+							onBack={() => setSelectedId(null)}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);
@@ -93,14 +243,13 @@ function PreferencesPanel() {
 	>("idle");
 
 	useEffect(() => {
-		if (settings) {
+		if (settings)
 			setDraft({
 				include: [...settings.include_keywords],
 				exclude: [...settings.exclude_keywords],
 				location: [...settings.location_keywords],
 				workTypes: [...(settings.work_types ?? [])],
 			});
-		}
 	}, [settings]);
 
 	useEffect(() => {
@@ -196,7 +345,7 @@ function PreferencesPanel() {
 
 	if (isLoading) {
 		return (
-			<aside className="w-72 shrink-0 border-r border-[#1a2a1a] p-4">
+			<aside className="h-full p-4">
 				<div className="space-y-3">
 					{[1, 2, 3].map((i) => (
 						<div
@@ -217,7 +366,7 @@ function PreferencesPanel() {
 	};
 
 	return (
-		<aside className="flex w-72 shrink-0 flex-col border-r border-[#1a2a1a]">
+		<aside className="flex h-full flex-col">
 			<div className="flex-1 overflow-y-auto p-4">
 				<div className="mb-5 flex items-center justify-between">
 					<h3 className="text-xs font-semibold uppercase tracking-wider text-[#6a7a6a]">
@@ -344,15 +493,16 @@ function PreferencesPanel() {
 										key={t}
 										type="button"
 										onClick={() =>
-											setDraft((prev) => {
-												if (!prev) return prev;
-												return {
-													...prev,
-													workTypes: selected
-														? prev.workTypes.filter((x) => x !== t)
-														: [...prev.workTypes, t],
-												};
-											})
+											setDraft((prev) =>
+												prev
+													? {
+															...prev,
+															workTypes: selected
+																? prev.workTypes.filter((x) => x !== t)
+																: [...prev.workTypes, t],
+														}
+													: prev,
+											)
 										}
 										className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${
 											selected
@@ -377,7 +527,7 @@ function PreferencesPanel() {
 
 // ---- Keyword Section ----
 
-interface KeywordSectionProps {
+interface KWProps {
 	label: string;
 	field: "include" | "exclude" | "location";
 	keywords: string[];
@@ -386,11 +536,8 @@ interface KeywordSectionProps {
 	onCloseInput: () => void;
 	inputRef: React.RefObject<HTMLInputElement | null>;
 	highlight: "green" | "red" | "amber";
-	onStageAdd: (
-		field: "include" | "exclude" | "location",
-		value: string,
-	) => void;
-	onChipClick: (kw: string, field: "include" | "exclude" | "location") => void;
+	onStageAdd: (f: "include" | "exclude" | "location", v: string) => void;
+	onChipClick: (kw: string, f: "include" | "exclude" | "location") => void;
 	markedForDelete: Set<string>;
 }
 
@@ -433,7 +580,7 @@ function KeywordSection({
 	onStageAdd,
 	onChipClick,
 	markedForDelete,
-}: KeywordSectionProps) {
+}: KWProps) {
 	const c = chipColors[highlight];
 	return (
 		<div>
@@ -490,11 +637,7 @@ function KeywordSection({
 
 const ChipInput = forwardRef<
 	HTMLInputElement,
-	{
-		onSubmit: (value: string) => void;
-		onCancel: () => void;
-		placeholder: string;
-	}
+	{ onSubmit: (v: string) => void; onCancel: () => void; placeholder: string }
 >(({ onSubmit, onCancel, placeholder }, ref) => {
 	const [value, setValue] = useState("");
 	return (

@@ -14,7 +14,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 
 	if (!role) {
 		return (
-			<aside className="w-96 shrink-0 border-l border-[#1a2a1a] overflow-y-auto">
+			<aside className="w-full h-full overflow-y-auto">
 				<div className="flex h-full items-center justify-center text-[#4a5a4a]">
 					<p className="text-xs">Select a role to view details</p>
 				</div>
@@ -31,7 +31,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 	};
 
 	return (
-		<aside className="w-96 shrink-0 border-l border-[#1a2a1a] overflow-y-auto">
+		<aside className="w-full h-full overflow-y-auto">
 			<div className="p-6">
 				<button
 					onClick={onBack}
