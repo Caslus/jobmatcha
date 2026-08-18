@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
@@ -147,9 +148,39 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 
 	score := 0
 	percent := 0
+	var reasons []string
+	var details *model.MatchDetails
 	if sr != nil {
 		score = sr.Score
 		percent = sr.Percent
+		reasons = sr.Reasons
+
+		// Build match details
+		includeScore := sr.IncludeScore
+
+		// Recency factor
+		recency := 1.0
+		if role.PostedAt != nil {
+			days := time.Since(*role.PostedAt).Hours() / 24
+			recency = 1.0 - days/180.0
+			if recency < 0.3 {
+				recency = 0.3
+			}
+		} else {
+			recency = 0.3
+		}
+		adjusted := float64(includeScore) * recency
+
+		details = &model.MatchDetails{
+			IncludeScore:  includeScore,
+			BonusScore:    sr.BonusScore,
+			TotalScore:    score,
+			RecencyFactor: recency,
+			AdjustedScore: adjusted,
+			MatchedKw:     len(sr.Reasons),
+			TotalKw:       len(filter.IncludeKeywords),
+			Percent:       percent,
+		}
 	}
 
 	c.JSON(http.StatusOK, model.RoleDetailResponse{
@@ -164,6 +195,8 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 		PostedAt:       role.PostedAt,
 		RelevanceScore: score,
 		MatchPercent:   percent,
+		MatchReasons:   reasons,
+		MatchDetails:   details,
 		IsHidden:       role.IsHidden,
 		IsInterested:   role.IsInterested,
 	})

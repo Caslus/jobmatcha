@@ -1,5 +1,14 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Bookmark, Clock, LogOut } from "lucide-react";
+import {
+	Bookmark,
+	Clock,
+	FileText,
+	FolderTree,
+	Globe,
+	LogOut,
+	MapPin,
+	Zap,
+} from "lucide-react";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import {
 	usePatchRole,
@@ -35,8 +44,10 @@ function timeAgo(dateStr: string | null): string {
 }
 
 function scoreColor(percent: number): string {
-	if (percent >= 70) return "text-green-400 bg-green-400/10 border-green-400/20";
-	if (percent >= 40) return "text-amber-400 bg-amber-400/10 border-amber-400/20";
+	if (percent >= 70)
+		return "text-green-400 bg-green-400/10 border-green-400/20";
+	if (percent >= 40)
+		return "text-amber-400 bg-amber-400/10 border-amber-400/20";
 	return "text-gray-500 bg-gray-500/10 border-gray-500/20";
 }
 
@@ -128,7 +139,6 @@ function DashboardPage() {
 							</span>
 						</div>
 						<div className="flex items-center gap-2 text-xs text-[#6a7a6a]">
-							<span>Role</span>
 							<span className="w-16 text-right">Match</span>
 						</div>
 					</div>
@@ -182,8 +192,8 @@ function DashboardPage() {
 											<div className="flex flex-col items-end gap-1">
 												<span
 													className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold ${scoreColor(role.match_percent ?? 0)}`}
-																										>
-																											{matchLabel(role.match_percent ?? 0)}
+												>
+													{matchLabel(role.match_percent ?? 0)}
 												</span>
 												{role.is_interested && (
 													<Bookmark
@@ -277,6 +287,152 @@ function DashboardPage() {
 										{selectedRole.is_hidden ? "Unhide" : "Hide"}
 									</button>
 								</div>
+
+								{/* Match Analysis */}
+								{selectedRole.match_details && (
+									<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
+										<p className="mb-3 text-xs font-medium text-[#6a7a6a]">
+											Match Analysis
+										</p>
+
+										{/* All match signals */}
+										<div className="space-y-1.5 mb-3">
+											{selectedRole.match_reasons?.map((r: string) => {
+												const [source, ...rest] = r.split(":");
+												const kw = rest.join(":");
+												let Icon = FileText;
+												let label = "";
+												let color = "text-[#7dba7a]";
+												let points = "";
+												switch (source) {
+													case "title":
+														Icon = FileText;
+														label = "Title";
+														color = "text-[#7dba7a]";
+														points = "+2";
+														break;
+													case "dept":
+														Icon = FolderTree;
+														label = "Dept";
+														color = "text-amber-400";
+														points = "+1";
+														break;
+													case "loc":
+														Icon = MapPin;
+														label = "Loc";
+														color = "text-amber-400";
+														points = "+1";
+														break;
+													case "location":
+														Icon = Globe;
+														label = "Region";
+														color = "text-blue-400";
+														points = "✓";
+														break;
+													case "work_type":
+														Icon = Zap;
+														label = "Type";
+														color = "text-purple-400";
+														points = "+1";
+														break;
+													default:
+														Icon = FileText;
+														label = "";
+														color = "text-[#6a7a6a]";
+														points = "";
+														break;
+												}
+												return (
+													<div
+														key={r}
+														className="flex items-center justify-between text-xs"
+													>
+														<div className="flex items-center gap-1.5">
+															<Icon size={11} className={color} />
+															<span className="text-[#c8c8c8]">
+																{kw}{" "}
+																<span className="text-[#6a7a6a]">
+																	({label})
+																</span>
+															</span>
+														</div>
+														{points && (
+															<span
+																className={`font-medium ${source === "location" ? "text-blue-400" : color}`}
+															>
+																{points}
+															</span>
+														)}
+													</div>
+												);
+											})}
+										</div>
+
+										{/* Score breakdown */}
+										<div className="space-y-1 text-xs text-[#9a9a9a]">
+											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
+												<span>Include score</span>
+												<span className="text-[#c8c8c8] font-medium">
+													{selectedRole.match_details.include_score} pts
+												</span>
+											</div>
+											{selectedRole.match_details.bonus_score > 0 && (
+												<div className="flex justify-between">
+													<span>Bonus (work type)</span>
+													<span className="text-purple-400 font-medium">
+														+{selectedRole.match_details.bonus_score}
+													</span>
+												</div>
+											)}
+											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
+												<span>Raw score</span>
+												<span className="text-[#c8c8c8] font-medium">
+													{selectedRole.match_details.total_score} pts
+												</span>
+											</div>
+											<div className="flex justify-between">
+												<span>Recency</span>
+												<span className="text-blue-400 font-medium">
+													×
+													{selectedRole.match_details.recency_factor.toFixed(2)}
+												</span>
+											</div>
+											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
+												<span>Adjusted score</span>
+												<span className="text-[#c8c8c8] font-medium">
+													{selectedRole.match_details.adjusted_score.toFixed(1)}
+												</span>
+											</div>
+										</div>
+
+										{/* Result bar */}
+										<div className="mt-3 flex items-center gap-3 rounded-lg bg-[#080908] px-3 py-2">
+											<span
+												className={`text-sm font-bold ${scoreColor(selectedRole.match_details.percent)}`}
+											>
+												{matchLabel(selectedRole.match_details.percent)}
+											</span>
+											<div className="flex-1 h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
+												<div
+													className={`h-full rounded-full transition-all ${
+														selectedRole.match_details.percent >= 70
+															? "bg-[#7dba7a]"
+															: selectedRole.match_details.percent >= 40
+																? "bg-amber-400"
+																: "bg-[#4a5a4a]"
+													}`}
+													style={{
+														width: `${selectedRole.match_details.percent}%`,
+													}}
+												/>
+											</div>
+											<span className="text-[10px] text-[#6a7a6a]">
+												{selectedRole.match_details.matched_keywords}/
+												{selectedRole.match_details.total_keywords} keywords
+											</span>
+										</div>
+									</div>
+								)}
 
 								{selectedRole.url && (
 									<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">

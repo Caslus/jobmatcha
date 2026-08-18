@@ -97,10 +97,12 @@ type RuleFilter struct {
 
 // ScoredRole carries the relevance result for a single role.
 type ScoredRole struct {
-	Role    model.Role
-	Score   int
-	Percent int
-	Reasons []string
+	Role         model.Role
+	Score        int
+	Percent      int
+	IncludeScore int
+	BonusScore   int
+	Reasons      []string
 }
 
 // NewRuleFilter creates a filter from user config.
@@ -224,10 +226,12 @@ func (f *RuleFilter) Evaluate(role *model.Role) *ScoredRole {
 	}
 
 	return &ScoredRole{
-		Role:    *role,
-		Score:   totalScore,
-		Percent: percent,
-		Reasons: reasons,
+		Role:         *role,
+		Score:        totalScore,
+		Percent:      percent,
+		IncludeScore: includeScore,
+		BonusScore:   totalScore - includeScore,
+		Reasons:      reasons,
 	}
 }
 

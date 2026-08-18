@@ -70,6 +70,16 @@ export interface AuthTokenResponse {
 export interface ErrorResponse {
   error: string;
 }
+export interface MatchDetails {
+  include_score: number /* int */;
+  bonus_score: number /* int */;
+  total_score: number /* int */;
+  recency_factor: number /* float64 */;
+  adjusted_score: number /* float64 */;
+  matched_keywords: number /* int */;
+  total_keywords: number /* int */;
+  percent: number /* int */;
+}
 export interface RoleListItem {
   id: number /* uint */;
   company_id: number /* uint */;
@@ -105,6 +115,8 @@ export interface RoleDetailResponse {
   posted_at?: any /* time.Time */;
   relevance_score: number /* int */;
   match_percent: number /* int */;
+  match_reasons?: string[];
+  match_details?: MatchDetails;
   is_hidden: boolean;
   is_interested: boolean;
 }
