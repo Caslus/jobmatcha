@@ -133,3 +133,27 @@ export interface Role {
 export interface Session {
 	created_at: any /* time.Time */;
 }
+
+//////////
+// source: settings.go
+
+/**
+ * SettingsResponse returns the user's preferences (password hash excluded).
+ */
+export interface SettingsResponse {
+	include_keywords: StringSlice;
+	exclude_keywords: StringSlice;
+	location_keywords: StringSlice;
+	work_types: StringSlice;
+	employment_type: string;
+}
+/**
+ * SettingsUpdateRequest is the request body for PUT /api/settings.
+ */
+export interface SettingsUpdateRequest {
+	include_keywords?: StringSlice;
+	exclude_keywords?: StringSlice;
+	location_keywords?: StringSlice;
+	work_types?: StringSlice;
+	employment_type?: string;
+}

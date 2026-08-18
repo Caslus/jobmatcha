@@ -4,6 +4,8 @@ import type {
 	AuthTokenResponse,
 	RoleDetailResponse,
 	RoleListResponse,
+	SettingsResponse,
+	SettingsUpdateRequest,
 } from "@/types/api.gen";
 
 const API_BASE = "http://localhost:8181/api";
@@ -88,4 +90,11 @@ export const rolesApi = {
 		id: number,
 		updates: { is_hidden?: boolean; is_interested?: boolean },
 	) => api.patch(`roles/${id}`, { json: updates }).json(),
+};
+
+// Settings
+export const settingsApi = {
+	get: () => api.get("settings").json<SettingsResponse>(),
+	update: (data: SettingsUpdateRequest) =>
+		api.put("settings", { json: data }).json(),
 };

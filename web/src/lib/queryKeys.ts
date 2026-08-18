@@ -10,4 +10,7 @@ export const queryKeys = {
 		details: () => [...queryKeys.roles.all, "detail"] as const,
 		detail: (id: number) => [...queryKeys.roles.details(), id] as const,
 	},
+	settings: {
+		all: ["settings"] as const,
+	},
 };

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { authApi, rolesApi } from "../lib/api";
+import { authApi, rolesApi, settingsApi } from "../lib/api";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../stores/auth";
 
@@ -96,6 +96,30 @@ export function usePatchRole() {
 			is_interested?: boolean;
 		}) => rolesApi.patch(id, updates),
 		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.roles.lists() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.roles.details() });
+		},
+	});
+}
+
+// ---- Settings hooks ----
+
+export function useSettings() {
+	return useQuery({
+		queryKey: queryKeys.settings.all,
+		queryFn: () => settingsApi.get(),
+		staleTime: 1000 * 60 * 5,
+	});
+}
+
+export function useUpdateSettings() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: Parameters<typeof settingsApi.update>[0]) =>
+			settingsApi.update(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
 			queryClient.invalidateQueries({ queryKey: queryKeys.roles.lists() });
 		},
 	});

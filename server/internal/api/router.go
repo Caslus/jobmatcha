@@ -9,6 +9,7 @@ import (
 func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) {
 	auth := NewAuthHandler(repos.Config, db)
 	roles := NewRoleHandler(repos)
+	settings := NewSettingsHandler(repos.Config)
 
 	// Public routes (only what's needed before auth)
 	r.GET("/api/health", func(c *gin.Context) {
@@ -26,5 +27,7 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 		protected.GET("/roles", roles.List)
 		protected.GET("/roles/:id", roles.GetByID)
 		protected.PATCH("/roles/:id", roles.Patch)
+		protected.GET("/settings", settings.Get)
+		protected.PUT("/settings", settings.Update)
 	}
 }
