@@ -4,31 +4,31 @@
 // source: auth.go
 
 export interface LoginRequest {
-	password: string;
+  password: string;
 }
 export interface SetupRequest {
-	password: string;
+  password: string;
 }
 export interface ChangePasswordRequest {
-	current_password: string;
-	new_password: string;
+  current_password: string;
+  new_password: string;
 }
 
 //////////
 // source: company.go
 
 export interface Company {
-	id: number /* uint */;
-	name: string;
-	careers_url: string;
-	ats_type: string;
-	ats_slug: string;
-	region: string;
-	location: string;
-	active: boolean;
-	last_scanned_at?: any /* time.Time */;
-	created_at: any /* time.Time */;
-	updated_at: any /* time.Time */;
+  id: number /* uint */;
+  name: string;
+  careers_url: string;
+  ats_type: string;
+  ats_slug: string;
+  region: string;
+  location: string;
+  active: boolean;
+  last_scanned_at?: any /* time.Time */;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
 }
 
 //////////
@@ -36,102 +36,121 @@ export interface Company {
 
 export type StringSlice = string[];
 export interface Config {
-	setup_complete: boolean;
-	/**
-	 * OIDC (optional)
-	 */
-	oidc_enabled: boolean;
-	oidc_provider_url: string;
-	oidc_client_id: string;
-	/**
-	 * Relevance preferences
-	 */
-	include_keywords: StringSlice;
-	exclude_keywords: StringSlice;
-	location_keywords: StringSlice;
-	work_types: StringSlice;
-	employment_type: string;
-	created_at: any /* time.Time */;
-	updated_at: any /* time.Time */;
+  setup_complete: boolean;
+  /**
+   * OIDC (optional)
+   */
+  oidc_enabled: boolean;
+  oidc_provider_url: string;
+  oidc_client_id: string;
+  /**
+   * Relevance preferences
+   */
+  include_keywords: StringSlice;
+  exclude_keywords: StringSlice;
+  location_keywords: StringSlice;
+  work_types: StringSlice;
+  employment_type: string;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
 }
 
 //////////
 // source: response.go
 
 export interface AuthStatusResponse {
-	authenticated: boolean;
-	setup_complete: boolean;
-	oidc_enabled: boolean;
-	oidc_provider_url?: string;
+  authenticated: boolean;
+  setup_complete: boolean;
+  oidc_enabled: boolean;
+  oidc_provider_url?: string;
 }
 export interface AuthTokenResponse {
-	token: string;
+  token: string;
 }
 export interface ErrorResponse {
-	error: string;
+  error: string;
 }
 export interface RoleListItem {
-	id: number /* uint */;
-	company_id: number /* uint */;
-	company_name: string;
-	title: string;
-	department: string;
-	location: string;
-	posted_at?: any /* time.Time */;
-	relevance_score: number /* int */;
-	is_hidden: boolean;
-	is_interested: boolean;
+  id: number /* uint */;
+  company_id: number /* uint */;
+  company_name: string;
+  title: string;
+  department: string;
+  location: string;
+  posted_at?: any /* time.Time */;
+  relevance_score: number /* int */;
+  is_hidden: boolean;
+  is_interested: boolean;
 }
 export interface PaginationInfo {
-	total: number /* int */;
-	page: number /* int */;
-	per_page: number /* int */;
-	total_pages: number /* int */;
+  total: number /* int */;
+  page: number /* int */;
+  per_page: number /* int */;
+  total_pages: number /* int */;
 }
 export interface RoleListResponse {
-	data: RoleListItem[];
-	pagination: PaginationInfo;
+  data: RoleListItem[];
+  pagination: PaginationInfo;
 }
 export interface RoleDetailResponse {
-	id: number /* uint */;
-	company_id: number /* uint */;
-	company_name: string;
-	title: string;
-	department: string;
-	location: string;
-	description: string;
-	url: string;
-	posted_at?: any /* time.Time */;
-	relevance_score: number /* int */;
-	is_hidden: boolean;
-	is_interested: boolean;
+  id: number /* uint */;
+  company_id: number /* uint */;
+  company_name: string;
+  title: string;
+  department: string;
+  location: string;
+  description: string;
+  url: string;
+  posted_at?: any /* time.Time */;
+  relevance_score: number /* int */;
+  is_hidden: boolean;
+  is_interested: boolean;
 }
 
 //////////
 // source: role.go
 
 export interface Role {
-	id: number /* uint */;
-	company_id: number /* uint */;
-	company: Company;
-	url: string;
-	title: string;
-	department: string;
-	location: string;
-	description: string;
-	posted_at?: any /* time.Time */;
-	status: string;
-	is_hidden: boolean;
-	is_interested: boolean;
-	created_at: any /* time.Time */;
-	updated_at: any /* time.Time */;
+  id: number /* uint */;
+  company_id: number /* uint */;
+  company: Company;
+  url: string;
+  title: string;
+  department: string;
+  location: string;
+  description: string;
+  posted_at?: any /* time.Time */;
+  status: string;
+  is_hidden: boolean;
+  is_interested: boolean;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
+}
+
+//////////
+// source: scan_job.go
+
+/**
+ * ScanJob tracks a background scan run.
+ * Status: pending → running → completed | failed
+ */
+export interface ScanJob {
+  id: number /* uint */;
+  status: string;
+  results?: string; // JSON-encoded []ScanResult
+  error?: string;
+  duration_ms: number /* int64 */;
+  started_at?: any /* time.Time */;
+  completed_at?: any /* time.Time */;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
 }
 
 //////////
 // source: session.go
 
 export interface Session {
-	created_at: any /* time.Time */;
+  created_at: any /* time.Time */;
 }
 
 //////////
@@ -141,19 +160,19 @@ export interface Session {
  * SettingsResponse returns the user's preferences (password hash excluded).
  */
 export interface SettingsResponse {
-	include_keywords: StringSlice;
-	exclude_keywords: StringSlice;
-	location_keywords: StringSlice;
-	work_types: StringSlice;
-	employment_type: string;
+  include_keywords: StringSlice;
+  exclude_keywords: StringSlice;
+  location_keywords: StringSlice;
+  work_types: StringSlice;
+  employment_type: string;
 }
 /**
  * SettingsUpdateRequest is the request body for PUT /api/settings.
  */
 export interface SettingsUpdateRequest {
-	include_keywords?: StringSlice;
-	exclude_keywords?: StringSlice;
-	location_keywords?: StringSlice;
-	work_types?: StringSlice;
-	employment_type?: string;
+  include_keywords?: StringSlice;
+  exclude_keywords?: StringSlice;
+  location_keywords?: StringSlice;
+  work_types?: StringSlice;
+  employment_type?: string;
 }

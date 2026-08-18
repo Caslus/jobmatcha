@@ -11,5 +11,6 @@ func Migrate(db *gorm.DB) error {
 		&model.Role{},
 		&model.Config{},
 		&model.Session{},
+		&model.ScanJob{},
 	)
 }
