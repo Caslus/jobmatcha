@@ -186,6 +186,7 @@ func (f *RuleFilter) Evaluate(role *model.Role) *ScoredRole {
 
 	// 4. Include keywords — weighted by field
 	includeScore := 0
+	desc := strings.ToLower(role.Description)
 	for _, m := range f.includes {
 		switch {
 		case m.Match(title):
@@ -197,6 +198,9 @@ func (f *RuleFilter) Evaluate(role *model.Role) *ScoredRole {
 		case m.Match(loc):
 			includeScore += fieldWeight
 			reasons = append(reasons, "loc:"+m.raw)
+		case m.Match(desc):
+			includeScore += fieldWeight
+			reasons = append(reasons, "desc:"+m.raw)
 		}
 	}
 
@@ -214,12 +218,17 @@ func (f *RuleFilter) Evaluate(role *model.Role) *ScoredRole {
 	// produce different numbers instead of clustering.
 	adjusted := float64(includeScore) * recencyFactor(role.PostedAt)
 
-	// 7. Match percentage — saturating scale.
-	// score 7+ (adjusted) reaches 100%. Non-round numbers (29, 43, 57…)
-	// feel organic.
+	// 7. Match percentage — dynamic denominator based on keyword count.
+	// More keywords = harder to reach 100%. With 5 keywords, the
+	// denominator is ~6 (3 title hits = 100%). With 20 keywords,
+	// ~11 (3 title hits = 54%, need 6+ for 100%).
+	denominator := 5 + len(f.includes)/3
+	if denominator > 16 {
+		denominator = 16
+	}
 	percent := 0
 	if adjusted > 0 {
-		percent = (int(adjusted*100) + 3) / 7
+		percent = (int(adjusted*100) + 4) / denominator
 		if percent > 100 {
 			percent = 100
 		}

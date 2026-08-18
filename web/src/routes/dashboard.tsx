@@ -324,6 +324,12 @@ function DashboardPage() {
 														color = "text-amber-400";
 														points = "+1";
 														break;
+													case "desc":
+														Icon = FileText;
+														label = "Description";
+														color = "text-emerald-400";
+														points = "+1";
+														break;
 													case "location":
 														Icon = Globe;
 														label = "Region";
