@@ -1,110 +1,39 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import {
-	Bookmark,
-	Clock,
-	FileText,
-	FolderTree,
-	Globe,
-	LogOut,
-	MapPin,
-	Settings,
-	Zap,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { forwardRef, useEffect, useRef, useState } from "react";
-import {
-	usePatchRole,
-	useRole,
-	useRoles,
-	useSettings,
-	useUpdateSettings,
-} from "../hooks/useApi";
-import { authApi, scanApi } from "../lib/api";
+import { RoleDetailPanel } from "../features/jobs/RoleDetailPanel";
+import { RoleList } from "../features/jobs/RoleList";
+import { ScanStatusBar } from "../features/scan/ScanStatusBar";
+import { useSettings, useUpdateSettings } from "../hooks/useApi";
+import { authApi } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
 export const Route = createFileRoute("/dashboard")({
 	beforeLoad: () => {
 		const { authenticated } = useAuthStore.getState();
-		if (!authenticated) {
-			throw redirect({ to: "/" });
-		}
+		if (!authenticated) throw redirect({ to: "/" });
 	},
 	component: DashboardPage,
 });
-
-function timeAgo(dateStr: string | null): string {
-	if (!dateStr) return "";
-	const diff = Date.now() - new Date(dateStr).getTime();
-	const mins = Math.floor(diff / 60000);
-	if (mins < 1) return "just now";
-	if (mins < 60) return `${mins}m ago`;
-	const hrs = Math.floor(mins / 60);
-	if (hrs < 24) return `${hrs}h ago`;
-	const days = Math.floor(hrs / 24);
-	if (days < 30) return `${days}d ago`;
-	return `${Math.floor(days / 7)}w ago`;
-}
-
-function scoreColor(percent: number): string {
-	if (percent >= 70)
-		return "text-green-400 bg-green-400/10 border-green-400/20";
-	if (percent >= 40)
-		return "text-amber-400 bg-amber-400/10 border-amber-400/20";
-	return "text-gray-500 bg-gray-500/10 border-gray-500/20";
-}
-
-function matchLabel(percent: number): string {
-	return percent > 0 ? `${percent}%` : "–";
-}
 
 function DashboardPage() {
 	const navigate = useNavigate();
 	const { check } = useAuthStore();
 	const [selectedId, setSelectedId] = useState<number | null>(null);
-	const [page, setPage] = useState(1);
-	const patchRole = usePatchRole();
-
-	const { data: detailData } = useRole(selectedId);
-	const selectedRole = detailData ?? null;
 
 	useEffect(() => {
 		check().then(() => {
 			const { setupComplete } = useAuthStore.getState();
-			if (!setupComplete) {
-				navigate({ to: "/onboarding" });
-			}
+			if (!setupComplete) navigate({ to: "/onboarding" });
 		});
 	}, []);
 
 	const handleLogout = async () => {
 		try {
 			await authApi.logout();
-		} catch {
-			// Ignore errors — the token is still cleared
-		}
+		} catch {}
 		useAuthStore.getState().logout();
 		window.location.href = "/";
-	};
-
-	const { data: rolesData, isLoading: rolesLoading } = useRoles(page);
-	const roles = rolesData?.data ?? [];
-	const total = rolesData?.pagination?.total ?? 0;
-	const totalAll = rolesData?.total_all ?? 0;
-	const totalPages = Math.ceil(total / 25);
-
-	const handleToggleInterested = () => {
-		if (!selectedRole) return;
-		patchRole.mutate({
-			id: selectedRole.id,
-			is_interested: !selectedRole.is_interested,
-		});
-	};
-
-	const handleToggleHidden = () => {
-		if (!selectedRole) return;
-		patchRole.mutate({
-			id: selectedRole.id,
-			is_hidden: !selectedRole.is_hidden,
-		});
 	};
 
 	return (
@@ -117,360 +46,22 @@ function DashboardPage() {
 					<span className="text-lg font-bold text-[#e8e8e8]">jobmatcha</span>
 				</div>
 				<div className="flex items-center gap-4">
-					<span className="text-xs text-[#6a7a6a]">{totalAll} openings</span>
 					<button
 						onClick={handleLogout}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
 					>
-						<LogOut size={14} />
-						Logout
+						<LogOut size={14} /> Logout
 					</button>
 				</div>
 			</header>
 
 			<div className="flex flex-1 overflow-hidden">
 				<PreferencesPanel />
-
-				{/* Center — Role list */}
-				<main className="flex flex-1 flex-col overflow-hidden">
-					<div className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
-						<div className="flex items-center gap-2">
-							<h2 className="text-sm font-semibold">Roles</h2>
-							<span className="rounded-full bg-[#1a2a1a] px-2 py-0.5 text-xs text-[#6a7a6a]">
-								{total}
-							</span>
-						</div>
-						<div className="flex items-center gap-2 text-xs text-[#6a7a6a]">
-							<span className="w-16 text-right">Match</span>
-						</div>
-					</div>
-
-					<div className="flex-1 overflow-y-auto">
-						{rolesLoading ? (
-							<div className="space-y-2 p-4">
-								{[1, 2, 3, 4, 5].map((i) => (
-									<div
-										key={i}
-										className="h-16 animate-pulse rounded-lg bg-[#0d120d]"
-									/>
-								))}
-							</div>
-						) : roles.length === 0 ? (
-							<div className="flex h-full flex-col items-center justify-center text-[#4a5a4a]">
-								<p className="text-sm">No roles found</p>
-								<p className="mt-1 text-xs">Run a scan to find jobs</p>
-							</div>
-						) : (
-							<div className="space-y-1 p-2">
-								{roles.map((role) => (
-									<button
-										key={role.id}
-										onClick={() => setSelectedId(role.id)}
-										className={`w-full rounded-xl border px-4 py-3 text-left transition ${selectedId === role.id
-												? "border-[#7dba7a]/40 bg-[#1a2a1a]"
-												: "border-transparent bg-transparent hover:bg-[#0d120d]"
-											}`}
-									>
-										<div className="flex items-start justify-between gap-3">
-											<div className="min-w-0 flex-1">
-												<p className="truncate text-sm font-medium text-[#e8e8e8]">
-													{role.title}
-												</p>
-												<p className="mt-0.5 text-xs text-[#6a7a6a]">
-													{role.company_name}
-													{role.location && (
-														<>
-															<span className="mx-1">·</span>
-															{role.location}
-														</>
-													)}
-												</p>
-												<p className="mt-1 flex items-center gap-1 text-[10px] text-[#4a5a4a]">
-													<Clock size={10} />
-													{timeAgo(role.posted_at)}
-												</p>
-											</div>
-											<div className="flex flex-col items-end gap-1">
-												<span
-													className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold ${scoreColor(role.match_percent ?? 0)}`}
-												>
-													{matchLabel(role.match_percent ?? 0)}
-												</span>
-												{role.is_interested && (
-													<Bookmark
-														size={12}
-														className="text-[#7dba7a]"
-														fill="#7dba7a"
-													/>
-												)}
-											</div>
-										</div>
-									</button>
-								))}
-							</div>
-						)}
-					</div>
-
-					{totalPages > 1 && (
-						<div className="flex items-center justify-between border-t border-[#1a2a1a] px-6 py-3">
-							<button
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
-								disabled={page <= 1}
-								className="rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
-							>
-								Previous
-							</button>
-							<span className="text-xs text-[#4a5a4a]">
-								Page {page} of {totalPages}
-							</span>
-							<button
-								onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-								disabled={page >= totalPages}
-								className="rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
-							>
-								Next
-							</button>
-						</div>
-					)}
-				</main>
-
-				{/* Right — Role detail panel */}
-				<aside className="w-96 shrink-0 border-l border-[#1a2a1a] overflow-y-auto">
-					{selectedRole ? (
-						<div className="p-6">
-							<button
-								onClick={() => setSelectedId(null)}
-								className="mb-4 text-xs text-[#6a7a6a] transition hover:text-[#e8e8e8]"
-							>
-								← Back to list
-							</button>
-							<div className="mb-6">
-								<p className="text-xs text-[#6a7a6a]">
-									{selectedRole.company_name}
-								</p>
-								<h3 className="mt-1 text-lg font-bold text-[#e8e8e8]">
-									{selectedRole.title}
-								</h3>
-								<div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#6a7a6a]">
-									<span className="flex items-center gap-1">
-										{selectedRole.location}
-									</span>
-									<span
-										className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-semibold ${scoreColor(selectedRole.match_percent)}`}
-									>
-										✦ Match: {matchLabel(selectedRole.match_percent)}
-									</span>
-								</div>
-							</div>
-
-							<div className="space-y-4">
-								<div className="flex gap-2">
-									<button
-										onClick={handleToggleInterested}
-										disabled={patchRole.isPending}
-										className={`flex-1 rounded-lg border px-4 py-2 text-xs font-medium transition ${selectedRole.is_interested
-												? "border-[#7dba7a] bg-[#7dba7a]/10 text-[#7dba7a]"
-												: "border-[#2a3a2a] text-[#6a7a6a] hover:border-[#7dba7a]/50 hover:text-[#7dba7a]"
-											}`}
-									>
-										{patchRole.isPending
-											? "Updating..."
-											: selectedRole.is_interested
-												? "★ Interested"
-												: "☆ Mark Interested"}
-									</button>
-									<button
-										onClick={handleToggleHidden}
-										disabled={patchRole.isPending}
-										className="flex-1 rounded-lg border border-[#2a3a2a] px-4 py-2 text-xs font-medium text-[#6a7a6a] transition hover:border-red-400/50 hover:text-red-400"
-									>
-										{selectedRole.is_hidden ? "Unhide" : "Hide"}
-									</button>
-								</div>
-
-								{/* Match Analysis */}
-								{selectedRole.match_details && (
-									<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
-										<p className="mb-3 text-xs font-medium text-[#6a7a6a]">
-											Match Analysis
-										</p>
-
-										{/* All match signals */}
-										<div className="space-y-1.5 mb-3">
-											{selectedRole.match_reasons?.map((r: string) => {
-												const [source, ...rest] = r.split(":");
-												const kw = rest.join(":");
-												let Icon = FileText;
-												let label = "";
-												let color = "text-[#7dba7a]";
-												let points = "";
-												switch (source) {
-													case "title":
-														Icon = FileText;
-														label = "Title";
-														color = "text-[#7dba7a]";
-														points = "+2";
-														break;
-													case "dept":
-														Icon = FolderTree;
-														label = "Dept";
-														color = "text-amber-400";
-														points = "+1";
-														break;
-													case "loc":
-														Icon = MapPin;
-														label = "Loc";
-														color = "text-amber-400";
-														points = "+1";
-														break;
-													case "desc":
-														Icon = FileText;
-														label = "Description";
-														color = "text-emerald-400";
-														points = "+1";
-														break;
-													case "location":
-														Icon = Globe;
-														label = "Region";
-														color = "text-blue-400";
-														points = "✓";
-														break;
-													case "work_type":
-														Icon = Zap;
-														label = "Type";
-														color = "text-purple-400";
-														points = "+1";
-														break;
-													default:
-														Icon = FileText;
-														label = "";
-														color = "text-[#6a7a6a]";
-														points = "";
-														break;
-												}
-												return (
-													<div
-														key={r}
-														className="flex items-center justify-between text-xs"
-													>
-														<div className="flex items-center gap-1.5">
-															<Icon size={11} className={color} />
-															<span className="text-[#c8c8c8]">
-																{kw}{" "}
-																<span className="text-[#6a7a6a]">
-																	({label})
-																</span>
-															</span>
-														</div>
-														{points && (
-															<span
-																className={`font-medium ${source === "location" ? "text-blue-400" : color}`}
-															>
-																{points}
-															</span>
-														)}
-													</div>
-												);
-											})}
-										</div>
-
-										{/* Score breakdown */}
-										<div className="space-y-1 text-xs text-[#9a9a9a]">
-											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
-												<span>Include score</span>
-												<span className="text-[#c8c8c8] font-medium">
-													{selectedRole.match_details.include_score} pts
-												</span>
-											</div>
-											{selectedRole.match_details.bonus_score > 0 && (
-												<div className="flex justify-between">
-													<span>Bonus (work type)</span>
-													<span className="text-purple-400 font-medium">
-														+{selectedRole.match_details.bonus_score}
-													</span>
-												</div>
-											)}
-											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
-												<span>Raw score</span>
-												<span className="text-[#c8c8c8] font-medium">
-													{selectedRole.match_details.total_score} pts
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span>Recency</span>
-												<span className="text-blue-400 font-medium">
-													×
-													{selectedRole.match_details.recency_factor.toFixed(2)}
-												</span>
-											</div>
-											<div className="flex justify-between border-t border-[#1a2a1a] pt-2">
-												<span>Adjusted score</span>
-												<span className="text-[#c8c8c8] font-medium">
-													{selectedRole.match_details.adjusted_score.toFixed(1)}
-												</span>
-											</div>
-										</div>
-
-										{/* Result bar */}
-										<div className="mt-3 flex items-center gap-3 rounded-lg bg-[#080908] px-3 py-2">
-											<span
-												className={`text-sm font-bold ${scoreColor(selectedRole.match_details.percent)}`}
-											>
-												{matchLabel(selectedRole.match_details.percent)}
-											</span>
-											<div className="flex-1 h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
-												<div
-													className={`h-full rounded-full transition-all ${selectedRole.match_details.percent >= 70
-															? "bg-[#7dba7a]"
-															: selectedRole.match_details.percent >= 40
-																? "bg-amber-400"
-																: "bg-[#4a5a4a]"
-														}`}
-													style={{
-														width: `${selectedRole.match_details.percent}%`,
-													}}
-												/>
-											</div>
-											<span className="text-[10px] text-[#6a7a6a]">
-												{selectedRole.match_details.matched_keywords}/
-												{selectedRole.match_details.total_keywords} keywords
-											</span>
-										</div>
-									</div>
-								)}
-
-								{selectedRole.url && (
-									<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
-										<p className="mb-2 text-xs font-medium text-[#6a7a6a]">
-											Job URL
-										</p>
-										<a
-											href={selectedRole.url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="break-all text-xs text-[#7dba7a] transition hover:underline"
-										>
-											{selectedRole.url}
-										</a>
-									</div>
-								)}
-
-								<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
-									<p className="mb-2 text-xs font-medium text-[#6a7a6a]">
-										Description
-									</p>
-									<p className="text-xs leading-relaxed text-[#9a9a9a]">
-										{selectedRole.description || "No description loaded"}
-									</p>
-								</div>
-							</div>
-						</div>
-					) : (
-						<div className="flex h-full items-center justify-center text-[#4a5a4a]">
-							<p className="text-xs">Select a role to view details</p>
-						</div>
-					)}
-				</aside>
+				<RoleList selectedId={selectedId} onSelect={setSelectedId} />
+				<RoleDetailPanel
+					selectedId={selectedId}
+					onBack={() => setSelectedId(null)}
+				/>
 			</div>
 		</div>
 	);
@@ -488,15 +79,12 @@ function PreferencesPanel() {
 		location: useRef<HTMLInputElement>(null),
 	};
 
-	// Draft state — local copy of keywords for staging
 	const [draft, setDraft] = useState<{
 		include: string[];
 		exclude: string[];
 		location: string[];
 		workTypes: string[];
 	} | null>(null);
-
-	// Track chips marked for deletion
 	const [markedForDelete, setMarkedForDelete] = useState<Set<string>>(
 		new Set(),
 	);
@@ -504,7 +92,6 @@ function PreferencesPanel() {
 		"idle" | "saving" | "done" | "error"
 	>("idle");
 
-	// Initialize draft from server settings
 	useEffect(() => {
 		if (settings) {
 			setDraft({
@@ -516,7 +103,6 @@ function PreferencesPanel() {
 		}
 	}, [settings]);
 
-	// Focus input when a new one opens
 	useEffect(() => {
 		for (const key of showInputs) {
 			const ref = inputRefs[key as keyof typeof inputRefs];
@@ -559,19 +145,15 @@ function PreferencesPanel() {
 		kw: string,
 		field: "include" | "exclude" | "location",
 	) => {
-		// Newly added items (staged but not yet applied) — remove immediately, no apply needed
 		const key = `${field}_keywords` as
 			| "include_keywords"
 			| "exclude_keywords"
 			| "location_keywords";
-		const isStaged = settings && !settings[key].includes(kw);
-		if (isStaged) {
-			setDraft((prev) => {
-				if (!prev) return prev;
-				return { ...prev, [field]: prev[field].filter((k) => k !== kw) };
-			});
+		if (settings && !settings[key].includes(kw)) {
+			setDraft((prev) =>
+				prev ? { ...prev, [field]: prev[field].filter((k) => k !== kw) } : prev,
+			);
 		} else {
-			// Existing server item — toggle deletion mark for batch Apply
 			toggleDelete(kw);
 		}
 	};
@@ -579,15 +161,13 @@ function PreferencesPanel() {
 	const handleApply = () => {
 		if (!draft) return;
 		setApplyFeedback("saving");
-		const finalInclude = draft.include.filter((k) => !markedForDelete.has(k));
-		const finalExclude = draft.exclude.filter((k) => !markedForDelete.has(k));
-		const finalLocation = draft.location.filter((k) => !markedForDelete.has(k));
-
 		updateSettings.mutate(
 			{
-				include_keywords: finalInclude,
-				exclude_keywords: finalExclude,
-				location_keywords: finalLocation,
+				include_keywords: draft.include.filter((k) => !markedForDelete.has(k)),
+				exclude_keywords: draft.exclude.filter((k) => !markedForDelete.has(k)),
+				location_keywords: draft.location.filter(
+					(k) => !markedForDelete.has(k),
+				),
 				work_types: draft.workTypes,
 			},
 			{
@@ -643,15 +223,14 @@ function PreferencesPanel() {
 					<h3 className="text-xs font-semibold uppercase tracking-wider text-[#6a7a6a]">
 						Preferences
 					</h3>
-
-					{/* Apply button — right next to the title */}
 					<button
 						onClick={handleApply}
 						disabled={!hasChanges || applyFeedback === "saving"}
-						className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${hasChanges && applyFeedback !== "saving"
+						className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${
+							hasChanges && applyFeedback !== "saving"
 								? "bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] text-[#080908] hover:from-[#8dca8a] hover:to-[#6a9f6a]"
 								: "cursor-not-allowed bg-[#1a2a1a] text-[#4a5a4a]"
-							}`}
+						}`}
 					>
 						{applyFeedback === "saving"
 							? "Saving..."
@@ -664,169 +243,82 @@ function PreferencesPanel() {
 				</div>
 
 				<div className="space-y-5">
-					{/* Include */}
-					<div>
-						<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
-							Include
-						</label>
-						{showInputs.has("include") ? (
-							<ChipInput
-								ref={inputRefs.include}
-								onSubmit={(v) => {
-									stageAdd("include", v);
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("include");
-										return n;
-									});
-								}}
-								onCancel={() =>
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("include");
-										return n;
-									})
-								}
-								placeholder="engineer, go, backend..."
-							/>
-						) : null}
-						<div className="flex flex-wrap gap-1.5">
-							{display.include.length === 0 ? (
-								<span className="text-[10px] text-[#3a4a3a]">None set</span>
-							) : (
-								display.include.map((kw: string) => (
-									<Chip
-										key={kw}
-										label={kw}
-										highlight="green"
-										marked={markedForDelete.has(kw)}
-										onClick={() => handleChipClick(kw, "include")}
-									/>
-								))
-							)}
-							{!showInputs.has("include") && (
-								<AddChipButton
-									onClick={() =>
-										setShowInputs((prev) => {
-											const n = new Set(prev);
-											n.add("include");
-											return n;
-										})
-									}
-								/>
-							)}
-						</div>
-					</div>
+					<KeywordSection
+						label="Include"
+						field="include"
+						keywords={display.include}
+						showInput={showInputs.has("include")}
+						onAddInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.add("include");
+								return n;
+							})
+						}
+						onCloseInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.delete("include");
+								return n;
+							})
+						}
+						inputRef={inputRefs.include}
+						highlight="green"
+						onStageAdd={stageAdd}
+						onChipClick={handleChipClick}
+						markedForDelete={markedForDelete}
+					/>
+					<KeywordSection
+						label="Exclude"
+						field="exclude"
+						keywords={display.exclude}
+						showInput={showInputs.has("exclude")}
+						onAddInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.add("exclude");
+								return n;
+							})
+						}
+						onCloseInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.delete("exclude");
+								return n;
+							})
+						}
+						inputRef={inputRefs.exclude}
+						highlight="red"
+						onStageAdd={stageAdd}
+						onChipClick={handleChipClick}
+						markedForDelete={markedForDelete}
+					/>
+					<KeywordSection
+						label="Location"
+						field="location"
+						keywords={display.location}
+						showInput={showInputs.has("location")}
+						onAddInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.add("location");
+								return n;
+							})
+						}
+						onCloseInput={() =>
+							setShowInputs((prev) => {
+								const n = new Set(prev);
+								n.delete("location");
+								return n;
+							})
+						}
+						inputRef={inputRefs.location}
+						highlight="amber"
+						onStageAdd={stageAdd}
+						onChipClick={handleChipClick}
+						markedForDelete={markedForDelete}
+					/>
 
-					{/* Exclude */}
-					<div>
-						<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
-							Exclude
-						</label>
-						{showInputs.has("exclude") ? (
-							<ChipInput
-								ref={inputRefs.exclude}
-								onSubmit={(v) => {
-									stageAdd("exclude", v);
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("exclude");
-										return n;
-									});
-								}}
-								onCancel={() =>
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("exclude");
-										return n;
-									})
-								}
-								placeholder="manager, sales..."
-							/>
-						) : null}
-						<div className="flex flex-wrap gap-1.5">
-							{display.exclude.length === 0 ? (
-								<span className="text-[10px] text-[#3a4a3a]">None set</span>
-							) : (
-								display.exclude.map((kw: string) => (
-									<Chip
-										key={kw}
-										label={kw}
-										highlight="red"
-										marked={markedForDelete.has(kw)}
-										onClick={() => handleChipClick(kw, "exclude")}
-									/>
-								))
-							)}
-							{!showInputs.has("exclude") && (
-								<AddChipButton
-									onClick={() =>
-										setShowInputs((prev) => {
-											const n = new Set(prev);
-											n.add("exclude");
-											return n;
-										})
-									}
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* Location */}
-					<div>
-						<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
-							Location
-						</label>
-						{showInputs.has("location") ? (
-							<ChipInput
-								ref={inputRefs.location}
-								onSubmit={(v) => {
-									stageAdd("location", v);
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("location");
-										return n;
-									});
-								}}
-								onCancel={() =>
-									setShowInputs((prev) => {
-										const n = new Set(prev);
-										n.delete("location");
-										return n;
-									})
-								}
-								placeholder="Tokyo, Remote..."
-							/>
-						) : null}
-						<div className="flex flex-wrap gap-1.5">
-							{display.location.length === 0 ? (
-								<span className="text-[10px] text-[#3a4a3a]">None set</span>
-							) : (
-								display.location.map((kw: string) => (
-									<Chip
-										key={kw}
-										label={kw}
-										highlight="amber"
-										marked={markedForDelete.has(kw)}
-										onClick={() => handleChipClick(kw, "location")}
-									/>
-								))
-							)}
-							{!showInputs.has("location") && (
-								<AddChipButton
-									onClick={() =>
-										setShowInputs((prev) => {
-											const n = new Set(prev);
-											n.add("location");
-											return n;
-										})
-									}
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* Work Type */}
 					<div>
 						<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 							Work Type
@@ -835,15 +327,13 @@ function PreferencesPanel() {
 							<button
 								type="button"
 								onClick={() =>
-									setDraft((prev) => {
-										if (!prev) return prev;
-										return { ...prev, workTypes: [] };
-									})
+									setDraft((prev) => (prev ? { ...prev, workTypes: [] } : prev))
 								}
-								className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${display.workTypes.length === 0
+								className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${
+									display.workTypes.length === 0
 										? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
 										: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
-									}`}
+								}`}
 							>
 								Any
 							</button>
@@ -856,16 +346,19 @@ function PreferencesPanel() {
 										onClick={() =>
 											setDraft((prev) => {
 												if (!prev) return prev;
-												const next = selected
-													? prev.workTypes.filter((x) => x !== t)
-													: [...prev.workTypes, t];
-												return { ...prev, workTypes: next };
+												return {
+													...prev,
+													workTypes: selected
+														? prev.workTypes.filter((x) => x !== t)
+														: [...prev.workTypes, t],
+												};
 											})
 										}
-										className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${selected
+										className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${
+											selected
 												? "bg-[rgba(125,186,122,0.12)] text-[#7dba7a] border-[rgba(125,186,122,0.2)]"
 												: "bg-transparent text-[#6a7a6a] border-[rgba(255,255,255,0.06)] hover:text-[#8a9a8a] hover:border-[rgba(255,255,255,0.12)]"
-											}`}
+										}`}
 									>
 										{t === "full-time"
 											? "Full-time"
@@ -877,189 +370,34 @@ function PreferencesPanel() {
 					</div>
 				</div>
 			</div>
-
-			{/* Scan Controls */}
 			<ScanStatusBar />
 		</aside>
 	);
 }
 
-// ---- Scan Controls ----
+// ---- Keyword Section ----
 
-function ScanStatusBar() {
-	const [scanJob, setScanJob] = useState<any>(null);
-	const [scanning, setScanning] = useState(false);
-	const [showScheduled, setShowScheduled] = useState(false);
-	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-	// Load latest scan on mount — resume polling if still in progress
-	useEffect(() => {
-		scanApi.getLatest().then((job: any) => {
-			if (job) {
-				setScanJob(job);
-				if (job.status === "pending" || job.status === "running") {
-					setScanning(true);
-					startPolling(job.id);
-				}
-			}
-		}).catch(() => { });
-	}, []);
-
-	const startPolling = (scanId: number) => {
-		if (intervalRef.current) clearInterval(intervalRef.current);
-		intervalRef.current = setInterval(async () => {
-			try {
-				const job = await scanApi.get(scanId);
-				setScanJob(job);
-				if (job.status === "completed" || job.status === "failed") {
-					setScanning(false);
-					if (intervalRef.current) clearInterval(intervalRef.current);
-				}
-			} catch {
-				setScanning(false);
-				if (intervalRef.current) clearInterval(intervalRef.current);
-			}
-		}, 2000);
-	};
-
-	const startScan = async () => {
-		try {
-			const resp: any = await scanApi.start();
-			setScanning(true);
-			startPolling(resp.scan_id);
-		} catch {
-			setScanning(false);
-		}
-	};
-
-	// Cleanup interval on unmount
-	useEffect(() => {
-		return () => {
-			if (intervalRef.current) clearInterval(intervalRef.current);
-		};
-	}, []);
-
-	const lastScan = scanJob;
-	const lastScanDate = lastScan?.completed_at
-		? new Date(lastScan.completed_at).toLocaleDateString("en-CA") + " • " +
-		new Date(lastScan.completed_at).toLocaleTimeString("en-US", {
-			hour: "2-digit",
-			minute: "2-digit",
-			second: "2-digit",
-			hour12: false,
-		})
-		: null;
-
-	return (
-		<>
-			<div className="border-t border-[#1a2a1a] p-3 space-y-2">
-				<div className="flex items-center justify-between">
-					<span className="text-[10px] font-medium uppercase tracking-wider text-[#4a5a4a]">
-						Last Scan
-					</span>
-					<button
-						onClick={() => setShowScheduled(true)}
-						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-						title="Scheduled scan settings"
-					>
-						<Settings size={12} />
-					</button>
-				</div>
-
-				{lastScan ? (
-					<div className="text-[10px] text-[#6a7a6a] leading-relaxed">
-						{lastScan.status === "completed" ? (
-							<>
-								<p className="text-[#9a9a9a] font-medium">
-									{lastScan.total_new_roles} new roles
-								</p>
-								<p>
-									{lastScan.total_roles} total
-									{lastScan.total_companies > 0 && ` · ${lastScan.total_companies} companies`}
-									{lastScan.duration_ms > 0 && ` · ${(lastScan.duration_ms / 1000).toFixed(1)}s`}
-								</p>
-								{lastScanDate && <p className="text-[#4a5a4a]">{lastScanDate}</p>}
-							</>
-						) : lastScan.status === "failed" ? (
-							<>
-								<p className="text-red-400 font-medium">Scan failed</p>
-								{lastScan.error && <p className="text-[#4a5a4a] truncate">{lastScan.error}</p>}
-							</>
-						) : lastScan.status === "pending" || lastScan.status === "running" ? (
-							<p className="text-amber-400">Scanning...</p>
-						) : null}
-					</div>
-				) : (
-					<p className="text-[10px] text-[#3a4a3a]">Never scanned</p>
-				)}
-
-				{/* Progress bar */}
-				{scanning && scanJob && scanJob.total_companies > 0 && (
-					<div>
-						<div className="h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
-							<div
-								className="h-full rounded-full bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] transition-all duration-500"
-								style={{ width: `${Math.round(scanJob.completed_companies / scanJob.total_companies * 100)}%` }}
-							/>
-						</div>
-						<p className="mt-1 text-[10px] text-[#4a5a4a] text-right">
-							{scanJob.completed_companies}/{scanJob.total_companies} companies
-						</p>
-					</div>
-				)}
-
-				<button
-					onClick={startScan}
-					disabled={scanning}
-					className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-[11px] font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{scanning ? "Scanning..." : "New scan"}
-				</button>
-			</div>
-
-			{/* Scheduled Scan Modal */}
-			{showScheduled && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-					<div className="w-full max-w-sm rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-6 shadow-2xl">
-						<div className="mb-4 flex items-center justify-between">
-							<h3 className="text-sm font-semibold text-[#e8e8e8]">
-								Scheduled Scan Settings
-							</h3>
-							<button
-								onClick={() => setShowScheduled(false)}
-								className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-							>
-								<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-									<path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-								</svg>
-							</button>
-						</div>
-						<p className="text-xs text-[#6a7a6a]">
-							Scheduled scanning is not yet available. This will allow automatic daily/weekly scans.
-						</p>
-						<button
-							onClick={() => setShowScheduled(false)}
-							className="mt-4 w-full rounded-lg border border-[#2a3a2a] px-3 py-2 text-xs font-medium text-[#6a7a6a] transition hover:bg-[#1a2a1a]"
-						>
-							Close
-						</button>
-					</div>
-				</div>
-			)}
-		</>
-	);
-}
-
-// ---- Chip Components ----
-
-interface ChipProps {
+interface KeywordSectionProps {
 	label: string;
+	field: "include" | "exclude" | "location";
+	keywords: string[];
+	showInput: boolean;
+	onAddInput: () => void;
+	onCloseInput: () => void;
+	inputRef: React.RefObject<HTMLInputElement | null>;
 	highlight: "green" | "red" | "amber";
-	marked: boolean;
-	onClick: () => void;
+	onStageAdd: (
+		field: "include" | "exclude" | "location",
+		value: string,
+	) => void;
+	onChipClick: (kw: string, field: "include" | "exclude" | "location") => void;
+	markedForDelete: Set<string>;
 }
 
-const chipHighlight = {
+const chipColors: Record<
+	string,
+	{ base: string; hover: string; marked: string }
+> = {
 	green: {
 		base: "bg-[rgba(125,186,122,0.08)] text-[#7dba7a]/80 border-[rgba(125,186,122,0.15)]",
 		hover:
@@ -1083,38 +421,70 @@ const chipHighlight = {
 	},
 };
 
-function Chip({ label, highlight, marked, onClick }: ChipProps) {
-	const c = chipHighlight[highlight];
-
+function KeywordSection({
+	label,
+	field,
+	keywords,
+	showInput,
+	onAddInput,
+	onCloseInput,
+	inputRef,
+	highlight,
+	onStageAdd,
+	onChipClick,
+	markedForDelete,
+}: KeywordSectionProps) {
+	const c = chipColors[highlight];
 	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${marked ? `${c.marked} line-through` : `${c.base} ${c.hover}`
-				}`}
-		>
-			{label}
-		</button>
-	);
-}
-
-function AddChipButton({ onClick }: { onClick: () => void }) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-[#5a6a5a] transition hover:border-[rgba(255,255,255,0.18)] hover:text-[#8a9a8a]"
-		>
-			<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-				<path
-					d="M5 1v8M1 5h8"
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
+		<div>
+			<label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+				{label}
+			</label>
+			{showInput && (
+				<ChipInput
+					ref={inputRef}
+					onSubmit={(v) => {
+						onStageAdd(field, v);
+						onCloseInput();
+					}}
+					onCancel={onCloseInput}
+					placeholder={`${label.toLowerCase()}, ...`}
 				/>
-			</svg>
-			Add
-		</button>
+			)}
+			<div className="flex flex-wrap gap-1.5">
+				{keywords.length === 0 ? (
+					<span className="text-[10px] text-[#3a4a3a]">None set</span>
+				) : (
+					keywords.map((kw) => (
+						<button
+							key={kw}
+							type="button"
+							onClick={() => onChipClick(kw, field)}
+							className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${markedForDelete.has(kw) ? `${c.marked} line-through` : `${c.base} ${c.hover}`}`}
+						>
+							{kw}
+						</button>
+					))
+				)}
+				{!showInput && (
+					<button
+						type="button"
+						onClick={onAddInput}
+						className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-[11px] text-[#5a6a5a] transition hover:border-[rgba(255,255,255,0.18)] hover:text-[#8a9a8a]"
+					>
+						<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+							<path
+								d="M5 1v8M1 5h8"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+							/>
+						</svg>
+						Add
+					</button>
+				)}
+			</div>
+		</div>
 	);
 }
 
@@ -1127,31 +497,24 @@ const ChipInput = forwardRef<
 	}
 >(({ onSubmit, onCancel, placeholder }, ref) => {
 	const [value, setValue] = useState("");
-
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			if (value.trim()) onSubmit(value.trim());
-		} else if (e.key === "Escape") {
-			onCancel();
-		}
-	};
-
-	const handleBlur = () => {
-		setTimeout(() => {
-			if (value.trim()) onSubmit(value.trim());
-			else onCancel();
-		}, 150);
-	};
-
 	return (
 		<input
 			ref={ref}
 			type="text"
 			value={value}
 			onChange={(e) => setValue(e.target.value)}
-			onKeyDown={handleKeyDown}
-			onBlur={handleBlur}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					if (value.trim()) onSubmit(value.trim());
+				} else if (e.key === "Escape") onCancel();
+			}}
+			onBlur={() =>
+				setTimeout(() => {
+					if (value.trim()) onSubmit(value.trim());
+					else onCancel();
+				}, 150)
+			}
 			placeholder={placeholder}
 			className="mb-2 w-full rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.25)] px-2.5 py-1.5 text-xs text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[rgba(125,186,122,0.3)]"
 		/>
