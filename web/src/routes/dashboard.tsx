@@ -34,10 +34,14 @@ function timeAgo(dateStr: string | null): string {
 	return `${Math.floor(days / 7)}w ago`;
 }
 
-function scoreColor(score: number): string {
-	if (score >= 3) return "text-green-400 bg-green-400/10 border-green-400/20";
-	if (score >= 1) return "text-amber-400 bg-amber-400/10 border-amber-400/20";
+function scoreColor(percent: number): string {
+	if (percent >= 70) return "text-green-400 bg-green-400/10 border-green-400/20";
+	if (percent >= 40) return "text-amber-400 bg-amber-400/10 border-amber-400/20";
 	return "text-gray-500 bg-gray-500/10 border-gray-500/20";
+}
+
+function matchLabel(percent: number): string {
+	return percent > 0 ? `${percent}%` : "–";
 }
 
 function DashboardPage() {
@@ -177,9 +181,9 @@ function DashboardPage() {
 											</div>
 											<div className="flex flex-col items-end gap-1">
 												<span
-													className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold ${scoreColor(role.relevance_score)}`}
-												>
-													{role.relevance_score}
+													className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-xs font-semibold ${scoreColor(role.match_percent ?? 0)}`}
+																										>
+																											{matchLabel(role.match_percent ?? 0)}
 												</span>
 												{role.is_interested && (
 													<Bookmark
@@ -241,9 +245,9 @@ function DashboardPage() {
 										{selectedRole.location}
 									</span>
 									<span
-										className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-semibold ${scoreColor(selectedRole.relevance_score)}`}
+										className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-semibold ${scoreColor(selectedRole.match_percent)}`}
 									>
-										✦ Match Score: {selectedRole.relevance_score}
+										✦ Match: {matchLabel(selectedRole.match_percent)}
 									</span>
 								</div>
 							</div>

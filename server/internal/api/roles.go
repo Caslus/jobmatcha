@@ -56,8 +56,11 @@ func (h *RoleHandler) List(c *gin.Context) {
 		}
 	}
 
-	// Sort by score DESC, then posted_at DESC
+	// Sort by percent DESC, then score DESC, then posted_at DESC
 	sort.Slice(visible, func(i, j int) bool {
+		if visible[i].Percent != visible[j].Percent {
+			return visible[i].Percent > visible[j].Percent
+		}
 		if visible[i].Score != visible[j].Score {
 			return visible[i].Score > visible[j].Score
 		}
@@ -102,6 +105,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 			Location:       sr.Role.Location,
 			PostedAt:       sr.Role.PostedAt,
 			RelevanceScore: sr.Score,
+			MatchPercent:   sr.Percent,
 			IsHidden:       sr.Role.IsHidden,
 			IsInterested:   sr.Role.IsInterested,
 		}
@@ -142,8 +146,10 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 	sr := filter.Evaluate(role)
 
 	score := 0
+	percent := 0
 	if sr != nil {
 		score = sr.Score
+		percent = sr.Percent
 	}
 
 	c.JSON(http.StatusOK, model.RoleDetailResponse{
@@ -157,6 +163,7 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 		URL:            role.URL,
 		PostedAt:       role.PostedAt,
 		RelevanceScore: score,
+		MatchPercent:   percent,
 		IsHidden:       role.IsHidden,
 		IsInterested:   role.IsInterested,
 	})

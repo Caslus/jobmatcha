@@ -79,6 +79,7 @@ export interface RoleListItem {
   location: string;
   posted_at?: any /* time.Time */;
   relevance_score: number /* int */;
+  match_percent: number /* int */;
   is_hidden: boolean;
   is_interested: boolean;
 }
@@ -103,6 +104,7 @@ export interface RoleDetailResponse {
   url: string;
   posted_at?: any /* time.Time */;
   relevance_score: number /* int */;
+  match_percent: number /* int */;
   is_hidden: boolean;
   is_interested: boolean;
 }

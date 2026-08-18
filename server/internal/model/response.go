@@ -30,6 +30,7 @@ type RoleListItem struct {
 	Location       string     `json:"location"`
 	PostedAt       *time.Time `json:"posted_at"`
 	RelevanceScore int        `json:"relevance_score"`
+	MatchPercent   int        `json:"match_percent"`
 	IsHidden       bool       `json:"is_hidden"`
 	IsInterested   bool       `json:"is_interested"`
 }
@@ -57,6 +58,7 @@ type RoleDetailResponse struct {
 	URL            string     `json:"url"`
 	PostedAt       *time.Time `json:"posted_at"`
 	RelevanceScore int        `json:"relevance_score"`
+	MatchPercent   int        `json:"match_percent"`
 	IsHidden       bool       `json:"is_hidden"`
 	IsInterested   bool       `json:"is_interested"`
 }
