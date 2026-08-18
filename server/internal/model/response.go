@@ -58,6 +58,7 @@ type PaginationInfo struct {
 type RoleListResponse struct {
 	Data       []RoleListItem `json:"data"`
 	Pagination PaginationInfo `json:"pagination"`
+	TotalAll   int            `json:"total_all"`
 }
 
 type RoleDetailResponse struct {

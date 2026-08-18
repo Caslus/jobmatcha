@@ -52,3 +52,11 @@ func (r *RoleRepo) BulkCreate(roles []model.Role) error {
 	}
 	return r.db.CreateInBatches(roles, 100).Error
 }
+
+func (r *RoleRepo) CountAll() (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.Role{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}

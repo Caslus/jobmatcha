@@ -102,6 +102,7 @@ export interface PaginationInfo {
 export interface RoleListResponse {
   data: RoleListItem[];
   pagination: PaginationInfo;
+  total_all: number /* int */;
 }
 export interface RoleDetailResponse {
   id: number /* uint */;

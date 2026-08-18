@@ -112,6 +112,9 @@ func (h *RoleHandler) List(c *gin.Context) {
 		}
 	}
 
+	// Get total unfiltered count
+	totalAll, _ := h.repos.Role.CountAll()
+
 	c.JSON(http.StatusOK, model.RoleListResponse{
 		Data: items,
 		Pagination: model.PaginationInfo{
@@ -120,6 +123,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 			PerPage:    perPage,
 			TotalPages: totalPages,
 		},
+		TotalAll: int(totalAll),
 	})
 }
 

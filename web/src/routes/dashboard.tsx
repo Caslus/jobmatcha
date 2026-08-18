@@ -87,6 +87,7 @@ function DashboardPage() {
 	const { data: rolesData, isLoading: rolesLoading } = useRoles(page);
 	const roles = rolesData?.data ?? [];
 	const total = rolesData?.pagination?.total ?? 0;
+	const totalAll = rolesData?.total_all ?? 0;
 	const totalPages = Math.ceil(total / 25);
 
 	const handleToggleInterested = () => {
@@ -115,7 +116,7 @@ function DashboardPage() {
 					<span className="text-lg font-bold text-[#e8e8e8]">jobmatcha</span>
 				</div>
 				<div className="flex items-center gap-4">
-					<span className="text-xs text-[#6a7a6a]">{total} openings</span>
+					<span className="text-xs text-[#6a7a6a]">{totalAll} openings</span>
 					<button
 						onClick={handleLogout}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
