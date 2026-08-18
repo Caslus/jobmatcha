@@ -107,8 +107,8 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 					</div>
 				</div>
 			</div>
-	</aside>
-	)
+		</aside>
+	);
 }
 
 function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
@@ -238,6 +238,6 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 					{d.matched_keywords}/{d.total_keywords} keywords
 				</span>
 			</div>
-	</div>
-	)
+		</div>
+	);
 }

@@ -47,10 +47,8 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					</div>
 				) : (
 					<div className="space-y-1 p-2">
-						{roles.map(
-							(role) =>
-								(
-									<button
+						{roles.map((role) => (
+							<button
 								key={role.id}
 								onClick={() => onSelect(role.id)}
 								className={`w-full rounded-xl border px-4 py-3 text-left transition ${
@@ -94,8 +92,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 									</div>
 								</div>
 							</button>
-								),
-						)}
+						))}
 					</div>
 				)}
 			</div>
