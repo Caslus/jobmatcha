@@ -98,3 +98,10 @@ export const settingsApi = {
 	update: (data: SettingsUpdateRequest) =>
 		api.put("settings", { json: data }).json(),
 };
+
+// Scan
+export const scanApi = {
+	start: () => api.post("scan").json(),
+	get: (id: number) => api.get(`scan/${id}`).json(),
+	getLatest: () => api.get("scan/latest").json(),
+};

@@ -26,28 +26,6 @@ func NewScannerService(db *gorm.DB, repos *repository.Repositories) *ScannerServ
 	}
 }
 
-// ScanResult is the public DTO for a single company scan result.
-type ScanResult struct {
-	CompanyName string `json:"company_name"`
-	NewRoles    int    `json:"new_roles"`
-	TotalRoles  int    `json:"total_roles"`
-	Error       string `json:"error,omitempty"`
-}
-
-// ScanJobResponse is the public DTO for a scan job.
-type ScanJobResponse struct {
-	ID             uint         `json:"id"`
-	Status         string       `json:"status"`
-	Results        []ScanResult `json:"results,omitempty"`
-	Error          string       `json:"error,omitempty"`
-	DurationMS     int64        `json:"duration_ms"`
-	TotalNewRoles  int          `json:"total_new_roles,omitempty"`
-	TotalRoles     int          `json:"total_roles,omitempty"`
-	StartedAt      *time.Time   `json:"started_at,omitempty"`
-	CompletedAt    *time.Time   `json:"completed_at,omitempty"`
-	CreatedAt      time.Time    `json:"created_at"`
-}
-
 // StartScan creates a scan job and runs it in the background.
 // Returns the job ID immediately.
 func (s *ScannerService) StartScan() (uint, error) {
@@ -74,6 +52,12 @@ func (s *ScannerService) runScan(jobID uint) {
 	}
 
 	// Start the scan with a background context (outlives the HTTP request)
+	s.engine.ProgressCallback = func(completed, total int) {
+		if completed == 1 {
+			s.repos.ScanJob.UpdateStatus(jobID, "running")
+		}
+		s.repos.ScanJob.UpdateProgress(jobID, completed, total)
+	}
 	results := s.engine.ScanAll(context.Background())
 
 	// Encode results as JSON
@@ -94,7 +78,7 @@ func (s *ScannerService) runScan(jobID uint) {
 }
 
 // GetJob returns a scan job by ID.
-func (s *ScannerService) GetJob(id uint) (*ScanJobResponse, error) {
+func (s *ScannerService) GetJob(id uint) (*model.ScanJobResponse, error) {
 	job, err := s.repos.ScanJob.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -106,7 +90,7 @@ func (s *ScannerService) GetJob(id uint) (*ScanJobResponse, error) {
 }
 
 // GetLatestJob returns the most recent scan job.
-func (s *ScannerService) GetLatestJob() (*ScanJobResponse, error) {
+func (s *ScannerService) GetLatestJob() (*model.ScanJobResponse, error) {
 	job, err := s.repos.ScanJob.GetLatest()
 	if err != nil {
 		return nil, err
@@ -117,27 +101,29 @@ func (s *ScannerService) GetLatestJob() (*ScanJobResponse, error) {
 	return jobToResponse(job), nil
 }
 
-func resultsToDTO(results []scanner.ScanResult) []ScanResult {
-	dtos := make([]ScanResult, len(results))
+func resultsToDTO(results []scanner.ScanResult) []model.ScanResult {
+	dtos := make([]model.ScanResult, len(results))
 	for i, r := range results {
-		dtos[i] = ScanResult{CompanyName: r.CompanyName, NewRoles: r.NewRoles, TotalRoles: r.TotalRoles, Error: r.Error}
+		dtos[i] = model.ScanResult{CompanyName: r.CompanyName, NewRoles: r.NewRoles, TotalRoles: r.TotalRoles, Error: r.Error}
 	}
 	return dtos
 }
 
-func jobToResponse(job *model.ScanJob) *ScanJobResponse {
-	resp := &ScanJobResponse{
-		ID:          job.ID,
-		Status:      job.Status,
-		Error:       job.Error,
-		DurationMS:  job.DurationMS,
-		StartedAt:   job.StartedAt,
-		CompletedAt: job.CompletedAt,
-		CreatedAt:   job.CreatedAt,
+func jobToResponse(job *model.ScanJob) *model.ScanJobResponse {
+	resp := &model.ScanJobResponse{
+		ID:                job.ID,
+		Status:            job.Status,
+		Error:             job.Error,
+		DurationMS:        job.DurationMS,
+		TotalCompanies:    job.TotalCompanies,
+		CompletedCompanies: job.CompletedCompanies,
+		StartedAt:         job.StartedAt,
+		CompletedAt:       job.CompletedAt,
+		CreatedAt:         job.CreatedAt,
 	}
 
 	if job.Results != "" {
-		var results []ScanResult
+		var results []model.ScanResult
 		if err := json.Unmarshal([]byte(job.Results), &results); err == nil {
 			resp.Results = results
 			for _, r := range results {

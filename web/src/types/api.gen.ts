@@ -155,10 +155,38 @@ export interface ScanJob {
   results?: string; // JSON-encoded []ScanResult
   error?: string;
   duration_ms: number /* int64 */;
+  total_companies: number /* int */;
+  completed_companies: number /* int */;
   started_at?: any /* time.Time */;
   completed_at?: any /* time.Time */;
   created_at: any /* time.Time */;
   updated_at: any /* time.Time */;
+}
+/**
+ * ScanResult is the public DTO for a single company scan result.
+ */
+export interface ScanResult {
+  company_name: string;
+  new_roles: number /* int */;
+  total_roles: number /* int */;
+  error?: string;
+}
+/**
+ * ScanJobResponse is the public DTO returned by scan endpoints.
+ */
+export interface ScanJobResponse {
+  id: number /* uint */;
+  status: string;
+  results?: ScanResult[];
+  error?: string;
+  duration_ms: number /* int64 */;
+  total_companies: number /* int */;
+  completed_companies: number /* int */;
+  total_new_roles: number /* int */;
+  total_roles: number /* int */;
+  started_at?: any /* time.Time */;
+  completed_at?: any /* time.Time */;
+  created_at: any /* time.Time */;
 }
 
 //////////

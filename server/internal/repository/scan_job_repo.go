@@ -41,11 +41,20 @@ func (r *ScanJobRepo) UpdateStatus(id uint, status string) error {
 // Complete stores results and marks the job finished.
 func (r *ScanJobRepo) Complete(id uint, resultsJSON string, durationMS int64) error {
 	return r.db.Model(&model.ScanJob{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"status":       "completed",
-		"results":      resultsJSON,
-		"error":        "",
-		"duration_ms":  durationMS,
-		"completed_at": time.Now(),
+		"status":              "completed",
+		"results":             resultsJSON,
+		"error":               "",
+		"duration_ms":         durationMS,
+		"completed_companies": gorm.Expr("total_companies"),
+		"completed_at":        time.Now(),
+	}).Error
+}
+
+// UpdateProgress saves the current completed count and total for a running scan.
+func (r *ScanJobRepo) UpdateProgress(id uint, completed, total int) error {
+	return r.db.Model(&model.ScanJob{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"completed_companies": completed,
+		"total_companies":     total,
 	}).Error
 }
 

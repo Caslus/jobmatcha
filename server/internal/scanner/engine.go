@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/caslus/jobmatcha/internal/model"
@@ -17,11 +18,12 @@ import (
 
 // Engine orchestrates scanning all active companies through their ATS providers.
 type Engine struct {
-	DB         *gorm.DB
-	Repos      *repository.Repositories
-	Registry   *Registry
-	HTTPClient *http.Client
-	Semaphore  chan struct{}
+	DB               *gorm.DB
+	Repos            *repository.Repositories
+	Registry         *Registry
+	HTTPClient       *http.Client
+	Semaphore        chan struct{}
+	ProgressCallback func(completed, total int)
 }
 
 // NewEngine creates a scanner engine with the built-in providers registered.
@@ -65,6 +67,7 @@ func (e *Engine) ScanAll(ctx context.Context) []ScanResult {
 	results := make([]ScanResult, 0, len(companies))
 	var mu sync.Mutex
 	var wg sync.WaitGroup
+	var completed atomic.Int32
 
 	for _, company := range companies {
 		wg.Add(1)
@@ -78,6 +81,11 @@ func (e *Engine) ScanAll(ctx context.Context) []ScanResult {
 			mu.Lock()
 			results = append(results, result)
 			mu.Unlock()
+
+			n := completed.Add(1)
+			if e.ProgressCallback != nil {
+				e.ProgressCallback(int(n), len(companies))
+			}
 		}(company)
 	}
 
