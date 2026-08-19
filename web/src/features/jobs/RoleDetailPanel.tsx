@@ -34,6 +34,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 		<aside className="w-full h-full overflow-y-auto">
 			<div className="p-6">
 				<button
+					type="button"
 					onClick={onBack}
 					className="mb-4 text-sm text-[#6a7a6a] transition hover:text-[#e8e8e8]"
 				>
@@ -58,6 +59,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 				<div className="space-y-4">
 					<div className="flex gap-2">
 						<button
+							type="button"
 							onClick={handleToggleInterested}
 							disabled={patchRole.isPending}
 							className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
@@ -73,6 +75,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 									: "☆ Mark Interested"}
 						</button>
 						<button
+							type="button"
 							onClick={handleToggleHidden}
 							disabled={patchRole.isPending}
 							className="flex-1 rounded-lg border border-[#2a3a2a] px-4 py-2 text-sm font-medium text-[#6a7a6a] transition hover:border-red-400/50 hover:text-red-400"

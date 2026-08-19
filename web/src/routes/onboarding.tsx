@@ -61,22 +61,29 @@ function OnboardingPage() {
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
-						<label className="mb-1 block text-xs font-medium text-[#6a7a6a]">
+						<label
+							htmlFor="current-password"
+							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
+						>
 							Current Password
 						</label>
 						<input
+							id="current-password"
 							type="password"
 							value={current}
 							onChange={(e) => setCurrent(e.target.value)}
 							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-							autoFocus
 						/>
 					</div>
 					<div>
-						<label className="mb-1 block text-xs font-medium text-[#6a7a6a]">
+						<label
+							htmlFor="new-password"
+							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
+						>
 							New Password
 						</label>
 						<input
+							id="new-password"
 							type="password"
 							value={next}
 							onChange={(e) => setNext(e.target.value)}
@@ -84,10 +91,14 @@ function OnboardingPage() {
 						/>
 					</div>
 					<div>
-						<label className="mb-1 block text-xs font-medium text-[#6a7a6a]">
+						<label
+							htmlFor="confirm-password"
+							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
+						>
 							Confirm New Password
 						</label>
 						<input
+							id="confirm-password"
 							type="password"
 							value={confirm}
 							onChange={(e) => setConfirm(e.target.value)}

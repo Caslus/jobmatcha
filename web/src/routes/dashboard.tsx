@@ -63,9 +63,13 @@ function ResizeHandle({
 	onMouseDown: (e: React.MouseEvent) => void;
 }) {
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: Cannot use <hr> because a layout splitter requires child elements for the visual handle
 		<div
 			className="w-px shrink-0 relative cursor-col-resize bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors self-stretch"
 			onMouseDown={onMouseDown}
+			tabIndex={-1}
+			role="separator"
+			aria-valuenow={0}
 		>
 			<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-[#4a5a4a]" />
 		</div>
@@ -82,6 +86,7 @@ function CollapseButton({
 	const isRight = side === "right";
 	return (
 		<button
+			type="button"
 			onClick={onRestore}
 			className="w-5 shrink-0 flex items-center justify-center self-stretch bg-[#1a2a1a] hover:bg-[#7dba7a]/30 transition-colors cursor-pointer"
 			title={isRight ? "Show details" : "Show preferences"}
@@ -124,7 +129,7 @@ function DashboardPage() {
 			const { setupComplete } = useAuthStore.getState();
 			if (!setupComplete) navigate({ to: "/onboarding" });
 		});
-	}, []);
+	}, [check, navigate]);
 
 	const handleLogout = async () => {
 		try {
@@ -210,6 +215,7 @@ function DashboardPage() {
 					<span className="text-lg font-bold text-[#e8e8e8]">jobmatcha</span>
 				</div>
 				<button
+					type="button"
 					onClick={handleLogout}
 					className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
 				>

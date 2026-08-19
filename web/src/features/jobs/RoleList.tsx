@@ -76,6 +76,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					<div className="space-y-1 p-2">
 						{roles.map((role) => (
 							<button
+								type="button"
 								key={role.id}
 								onClick={() => onSelect(role.id)}
 								className={`w-full rounded-xl border px-4 py-3 text-left transition ${
@@ -128,6 +129,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 				<div className="border-t border-[#1a2a1a] px-6 py-3">
 					<div className="flex items-center justify-between">
 						<button
+							type="button"
 							onClick={() => goToPage((p) => Math.max(1, p - 1))}
 							disabled={page <= 1}
 							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
@@ -146,6 +148,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 							</div>
 						</div>
 						<button
+							type="button"
 							onClick={() => goToPage((p) => Math.min(totalPages, p + 1))}
 							disabled={page >= totalPages}
 							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"

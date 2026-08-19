@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings, useUpdateSettings } from "../../hooks/useApi";
 import { ScanStatusBar } from "../scan/ScanStatusBar";
 
@@ -114,9 +114,9 @@ function KeywordSection({
 	const c = chipColors[highlight];
 	return (
 		<div>
-			<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+			<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 				{label}
-			</label>
+			</span>
 			{showInput && (
 				<ChipInput
 					ref={inputRef}
@@ -149,7 +149,13 @@ function KeywordSection({
 						onClick={onAddInput}
 						className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[rgba(255,255,255,0.08)] px-2.5 py-1 text-sm text-[#5a6a5a] transition hover:border-[rgba(255,255,255,0.18)] hover:text-[#8a9a8a]"
 					>
-						<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+						<svg
+							width="10"
+							height="10"
+							viewBox="0 0 10 10"
+							fill="none"
+							aria-hidden="true"
+						>
 							<path
 								d="M5 1v8M1 5h8"
 								stroke="currentColor"
@@ -200,7 +206,11 @@ function snapIndex(days: number): number {
 function formatDateLabel(days: number): string {
 	if (days === 0) return "Any date";
 	if (days === 1) return "1 day";
-	if (days < 30) return `${days} days`;
+	if (days < 7) return `${days} days`;
+	if (days < 30) {
+		const weeks = Math.round(days / 7);
+		return weeks === 1 ? "1 week" : `${weeks} weeks`;
+	}
 	if (days < 365) {
 		const months = Math.round(days / 30);
 		return months === 1 ? "1 month" : `${months} months`;
@@ -238,11 +248,18 @@ export function PreferencesPanel() {
 	const { data: settings, isLoading } = useSettings();
 	const updateSettings = useUpdateSettings();
 	const [showInputs, setShowInputs] = useState<Set<string>>(new Set());
-	const inputRefs = {
-		include: useRef<HTMLInputElement>(null),
-		exclude: useRef<HTMLInputElement>(null),
-		location: useRef<HTMLInputElement>(null),
-	};
+	const includeRef = useRef<HTMLInputElement>(null);
+	const excludeRef = useRef<HTMLInputElement>(null);
+	const locationRef = useRef<HTMLInputElement>(null);
+
+	const inputRefs = useMemo(
+		() => ({
+			include: includeRef,
+			exclude: excludeRef,
+			location: locationRef,
+		}),
+		[],
+	);
 
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [markedForDelete, setMarkedForDelete] = useState<Set<string>>(
@@ -271,7 +288,7 @@ export function PreferencesPanel() {
 				break;
 			}
 		}
-	}, [showInputs]);
+	}, [showInputs, inputRefs]);
 
 	const stageAdd = (field: KeywordField, rawValue: string) => {
 		const keywords = rawValue
@@ -386,6 +403,7 @@ export function PreferencesPanel() {
 						Preferences
 					</h3>
 					<button
+						type="button"
 						onClick={handleApply}
 						disabled={!hasChanges || applyFeedback === "saving"}
 						className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
@@ -406,7 +424,7 @@ export function PreferencesPanel() {
 
 				<div className="space-y-5">
 					<KeywordSection
-						label="Include"
+						label="Keywords"
 						field="include"
 						keywords={display.include}
 						showInput={showInputs.has("include")}
@@ -482,9 +500,9 @@ export function PreferencesPanel() {
 					/>
 
 					<div>
-						<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+						<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 							Work Type
-						</label>
+						</span>
 						<div className="flex flex-wrap gap-1.5">
 							<WorkTypeToggle
 								label="Any"
@@ -524,9 +542,9 @@ export function PreferencesPanel() {
 					</div>
 
 					<div>
-						<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+						<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
 							Freshness
-						</label>
+						</span>
 						<div className="flex items-center gap-3">
 							<div className="relative flex-1 h-1.5">
 								<div className="absolute inset-0 rounded-full bg-[#1a2a1a]" />

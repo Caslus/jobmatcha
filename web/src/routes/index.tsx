@@ -26,7 +26,7 @@ function LoginPage() {
 				navigate({ to: "/dashboard" });
 			}
 		});
-	}, []);
+	}, [check, navigate]);
 
 	if (loading) {
 		return (
@@ -66,7 +66,6 @@ function LoginPage() {
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-							autoFocus
 						/>
 					</div>
 

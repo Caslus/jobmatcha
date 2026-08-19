@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScanJobResponse } from "#/types/api.gen.ts";
 import { scanApi } from "../../lib/api";
 
@@ -8,6 +8,23 @@ export function ScanStatusBar() {
 	const [scanning, setScanning] = useState(false);
 	const [showScheduled, setShowScheduled] = useState(false);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	const startPolling = useCallback((scanId: number) => {
+		if (intervalRef.current) clearInterval(intervalRef.current);
+		intervalRef.current = setInterval(async () => {
+			try {
+				const job = await scanApi.get(scanId);
+				setScanJob(job);
+				if (job.status === "completed" || job.status === "failed") {
+					setScanning(false);
+					if (intervalRef.current) clearInterval(intervalRef.current);
+				}
+			} catch {
+				setScanning(false);
+				if (intervalRef.current) clearInterval(intervalRef.current);
+			}
+		}, 2000);
+	}, []);
 
 	// Load latest scan on mount — resume polling if still in progress
 	useEffect(() => {
@@ -23,24 +40,7 @@ export function ScanStatusBar() {
 				}
 			})
 			.catch(() => {});
-	}, []);
-
-	const startPolling = (scanId: number) => {
-		if (intervalRef.current) clearInterval(intervalRef.current);
-		intervalRef.current = setInterval(async () => {
-			try {
-				const job = await scanApi.get(scanId);
-				setScanJob(job);
-				if (job.status === "completed" || job.status === "failed") {
-					setScanning(false);
-					if (intervalRef.current) clearInterval(intervalRef.current);
-				}
-			} catch {
-				setScanning(false);
-				if (intervalRef.current) clearInterval(intervalRef.current);
-			}
-		}, 2000);
-	};
+	}, [startPolling]);
 
 	const startScan = async () => {
 		try {
@@ -80,6 +80,7 @@ export function ScanStatusBar() {
 						Last Scan
 					</span>
 					<button
+						type="button"
 						onClick={() => setShowScheduled(true)}
 						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
 						title="Scheduled scan settings"
@@ -140,6 +141,7 @@ export function ScanStatusBar() {
 				)}
 
 				<button
+					type="button"
 					onClick={startScan}
 					disabled={scanning}
 					className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
@@ -157,10 +159,17 @@ export function ScanStatusBar() {
 								Scheduled Scan Settings
 							</h3>
 							<button
+								type="button"
 								onClick={() => setShowScheduled(false)}
 								className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
 							>
-								<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 14 14"
+									fill="none"
+									aria-hidden="true"
+								>
 									<path
 										d="M3 3l8 8M11 3l-8 8"
 										stroke="currentColor"
@@ -175,6 +184,7 @@ export function ScanStatusBar() {
 							daily/weekly scans.
 						</p>
 						<button
+							type="button"
 							onClick={() => setShowScheduled(false)}
 							className="mt-4 w-full rounded-lg border border-[#2a3a2a] px-3 py-2 text-xs font-medium text-[#6a7a6a] transition hover:bg-[#1a2a1a]"
 						>
