@@ -76,6 +76,15 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Hide native scrollbar (keep scroll functionality) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body,
 #app {

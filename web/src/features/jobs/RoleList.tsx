@@ -1,5 +1,5 @@
 import { Bookmark, Clock } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoles } from "../../hooks/useApi";
 import { matchLabel, scoreColor, timeAgo } from "../../lib/dashboard";
 import type { RoleListItem } from "../../types/api.gen";
@@ -15,6 +15,33 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 	const roles = (rolesData?.data ?? []) as RoleListItem[];
 	const total = rolesData?.pagination?.total ?? 0;
 	const totalPages = Math.ceil(total / 25);
+	const listRef = useRef<HTMLDivElement>(null);
+	const [scrollProgress, setScrollProgress] = useState(0);
+	const [animating, setAnimating] = useState(false);
+	const animTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+	const goToPage = (fn: (p: number) => number) => {
+		setPage(fn);
+		listRef.current?.scrollTo({ top: 0 });
+		setAnimating(true);
+		setScrollProgress(0);
+		clearTimeout(animTimer.current);
+		animTimer.current = setTimeout(() => setAnimating(false), 200);
+	};
+
+	useEffect(() => {
+		const el = listRef.current;
+		if (!el) return;
+		const onScroll = () => {
+			const pct =
+				el.scrollHeight - el.clientHeight > 0
+					? el.scrollTop / (el.scrollHeight - el.clientHeight)
+					: 0;
+			setScrollProgress(pct);
+		};
+		el.addEventListener("scroll", onScroll, { passive: true });
+		return () => el.removeEventListener("scroll", onScroll);
+	}, []);
 
 	return (
 		<main className="flex flex-1 flex-col overflow-hidden">
@@ -30,7 +57,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-y-auto">
+			<div ref={listRef} className="flex-1 overflow-y-auto scrollbar-hide">
 				{isLoading ? (
 					<div className="space-y-2 p-4">
 						{[1, 2, 3, 4, 5].map((i) => (
@@ -98,24 +125,34 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 			</div>
 
 			{totalPages > 1 && (
-				<div className="flex items-center justify-between border-t border-[#1a2a1a] px-6 py-3">
-					<button
-						onClick={() => setPage((p) => Math.max(1, p - 1))}
-						disabled={page <= 1}
-						className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
-					>
-						Previous
-					</button>
-					<span className="text-xs text-[#4a5a4a]">
-						Page {page} of {totalPages}
-					</span>
-					<button
-						onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-						disabled={page >= totalPages}
-						className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
-					>
-						Next
-					</button>
+				<div className="border-t border-[#1a2a1a] px-6 py-3">
+					<div className="flex items-center justify-between">
+						<button
+							onClick={() => goToPage((p) => Math.max(1, p - 1))}
+							disabled={page <= 1}
+							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+						>
+							Previous
+						</button>
+						<div className="flex flex-col items-center gap-1.5">
+							<span className="text-xs text-[#4a5a4a]">
+								Page {page} of {totalPages}
+							</span>
+							<div className="h-1 w-32 rounded-full bg-[#1a2a1a]">
+								<div
+									className={`h-full rounded-full bg-[#7dba7a] ${animating ? "transition-all duration-200" : ""}`}
+									style={{ width: `${scrollProgress * 100}%` }}
+								/>
+							</div>
+						</div>
+						<button
+							onClick={() => goToPage((p) => Math.min(totalPages, p + 1))}
+							disabled={page >= totalPages}
+							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+						>
+							Next
+						</button>
+					</div>
 				</div>
 			)}
 		</main>
