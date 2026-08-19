@@ -112,7 +112,8 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 }
 
 function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
-	const d = role.match_details!;
+	const d = role.match_details;
+	if (!d) return null;
 	return (
 		<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
 			<p className="mb-3 text-xs font-medium text-[#6a7a6a]">Match Analysis</p>

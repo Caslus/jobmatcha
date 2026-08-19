@@ -76,8 +76,8 @@ export function useRoles(page: number, perPage = 25) {
 
 export function useRole(id: number | null) {
 	return useQuery({
-		queryKey: queryKeys.roles.detail(id!),
-		queryFn: () => rolesApi.getByID(id!),
+		queryKey: queryKeys.roles.detail(id as number),
+		queryFn: () => rolesApi.getByID(id as number),
 		enabled: id !== null,
 		staleTime: 1000 * 60 * 5,
 	});
