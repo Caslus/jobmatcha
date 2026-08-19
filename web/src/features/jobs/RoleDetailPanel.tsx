@@ -1,4 +1,4 @@
-import { FileText, FolderTree, Globe, MapPin, Zap } from "lucide-react";
+import { FileText, FolderTree, Globe, MapPin, Zap, User } from "lucide-react";
 import { usePatchRole, useRole } from "../../hooks/useApi";
 import { matchLabel, scoreColor } from "../../lib/dashboard";
 import type { RoleDetailResponse } from "../../types/api.gen";
@@ -131,14 +131,14 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 						points = "";
 					switch (source) {
 						case "title":
-							Icon = FileText;
+							Icon = User;
 							label = "Title";
-							color = "text-[#7dba7a]";
+							color = "text-orange-400";
 							points = "+2";
 							break;
 						case "dept":
 							Icon = FolderTree;
-							label = "Dept";
+							label = "Department";
 							color = "text-amber-400";
 							points = "+1";
 							break;
