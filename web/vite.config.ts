@@ -9,6 +9,13 @@ import { defineConfig } from "vite";
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
 	plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+	server: {
+		watch: {
+			ignored: [
+				'**/.*tmp.*'
+			]
+		}
+	}
 });
 
 export default config;
