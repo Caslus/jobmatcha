@@ -1,10 +1,10 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Header from "#/components/Header.tsx";
 import { RoleDetailPanel } from "../features/jobs/RoleDetailPanel";
 import { RoleList } from "../features/jobs/RoleList";
 import { PreferencesPanel } from "../features/preferences";
-import { authApi } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
 // ── Resizable Panel Layout ─────────────────────────
@@ -131,16 +131,6 @@ function DashboardPage() {
 		});
 	}, [check, navigate]);
 
-	const handleLogout = async () => {
-		try {
-			await authApi.logout();
-		} catch {
-			/* ignore */
-		}
-		useAuthStore.getState().logout();
-		window.location.href = "/";
-	};
-
 	const onMouseDown = useCallback(
 		(side: "left" | "right") => (e: React.MouseEvent) => {
 			e.preventDefault();
@@ -207,21 +197,7 @@ function DashboardPage() {
 
 	return (
 		<div className="flex h-screen flex-col text-[#e8e8e8]">
-			<header className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
-				<div className="flex items-center gap-3">
-					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#7dba7a] to-[#4a7c4f]">
-						<span className="text-sm">🍵</span>
-					</div>
-					<span className="text-lg font-bold text-[#e8e8e8]">jobmatcha</span>
-				</div>
-				<button
-					type="button"
-					onClick={handleLogout}
-					className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
-				>
-					<LogOut size={14} /> Logout
-				</button>
-			</header>
+			<Header />
 
 			<div ref={containerRef} className="flex flex-1 overflow-hidden">
 				{!collapsedLeft && (

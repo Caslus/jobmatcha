@@ -1,4 +1,4 @@
-import { FileText, FolderTree, Globe, MapPin, Zap, User } from "lucide-react";
+import { FileText, FolderTree, Globe, MapPin, User, Zap } from "lucide-react";
 import { usePatchRole, useRole } from "../../hooks/useApi";
 import { matchLabel, scoreColor } from "../../lib/dashboard";
 import type { RoleDetailResponse } from "../../types/api.gen";
