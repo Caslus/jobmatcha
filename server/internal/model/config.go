@@ -38,6 +38,7 @@ type Config struct {
 	LocationKeywords StringSlice `gorm:"type:text;serializer:json" json:"location_keywords"`
 	WorkTypes        StringSlice `gorm:"type:text;serializer:json" json:"work_types"`
 	EmploymentType   string      `gorm:"size:50;default:''" json:"employment_type"`
+	MaxDaysOld       int         `gorm:"not null;default:0" json:"max_days_old"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

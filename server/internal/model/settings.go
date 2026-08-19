@@ -7,6 +7,7 @@ type SettingsResponse struct {
 	LocationKeywords StringSlice `json:"location_keywords"`
 	WorkTypes        StringSlice `json:"work_types"`
 	EmploymentType   string      `json:"employment_type"`
+	MaxDaysOld       int         `json:"max_days_old"`
 }
 
 // SettingsUpdateRequest is the request body for PUT /api/settings.
@@ -16,4 +17,5 @@ type SettingsUpdateRequest struct {
 	LocationKeywords *StringSlice `json:"location_keywords,omitempty"`
 	WorkTypes        *StringSlice `json:"work_types,omitempty"`
 	EmploymentType   *string      `json:"employment_type,omitempty"`
+	MaxDaysOld       *int         `json:"max_days_old,omitempty"`
 }

@@ -13,6 +13,7 @@ interface Draft {
 	exclude: string[];
 	location: string[];
 	workTypes: string[];
+	maxDaysOld: number;
 }
 
 interface KWProps {
@@ -164,6 +165,49 @@ function KeywordSection({
 	);
 }
 
+// ── Date label formatter ───────────────────────────
+
+const SNAP_VALUES = [
+	1,
+	2,
+	3,
+	4,
+	5,
+	6, // days
+	7,
+	14,
+	21, // weeks
+	30,
+	60,
+	90,
+	120,
+	150,
+	180,
+	210,
+	240,
+	270,
+	300,
+	330, // months
+	365, // year
+	0, // Any date (last)
+];
+
+function snapIndex(days: number): number {
+	const idx = SNAP_VALUES.indexOf(days);
+	return idx >= 0 ? idx : 0;
+}
+
+function formatDateLabel(days: number): string {
+	if (days === 0) return "Any date";
+	if (days === 1) return "1 day";
+	if (days < 30) return `${days} days`;
+	if (days < 365) {
+		const months = Math.round(days / 30);
+		return months === 1 ? "1 month" : `${months} months`;
+	}
+	return "1 year";
+}
+
 // ── WorkTypeToggle (extracted from inline map) ─────
 
 interface WorkTypeToggleProps {
@@ -214,6 +258,7 @@ export function PreferencesPanel() {
 				exclude: [...settings.exclude_keywords],
 				location: [...settings.location_keywords],
 				workTypes: [...(settings.work_types ?? [])],
+				maxDaysOld: settings.max_days_old,
 			});
 	}, [settings]);
 
@@ -234,6 +279,7 @@ export function PreferencesPanel() {
 			.map((s) => s.trim().toLowerCase())
 			.filter((s) => s.length > 0);
 		if (keywords.length === 0) return;
+		setApplyFeedback("idle");
 		setDraft((prev) => {
 			if (!prev) return prev;
 			const arr = [...prev[field]];
@@ -245,6 +291,7 @@ export function PreferencesPanel() {
 	};
 
 	const toggleDelete = (keyword: string) => {
+		setApplyFeedback("idle");
 		setMarkedForDelete((prev) => {
 			const next = new Set(prev);
 			if (next.has(keyword)) next.delete(keyword);
@@ -259,6 +306,7 @@ export function PreferencesPanel() {
 			| "exclude_keywords"
 			| "location_keywords";
 		if (settings && !settings[key].includes(kw)) {
+			setApplyFeedback("idle");
 			setDraft((prev) =>
 				prev ? { ...prev, [field]: prev[field].filter((k) => k !== kw) } : prev,
 			);
@@ -278,6 +326,7 @@ export function PreferencesPanel() {
 					(k) => !markedForDelete.has(k),
 				),
 				work_types: draft.workTypes,
+				max_days_old: draft.maxDaysOld,
 			},
 			{
 				onSuccess: () => {
@@ -301,7 +350,8 @@ export function PreferencesPanel() {
 				draft.exclude.length !== settings.exclude_keywords.length ||
 				draft.location.length !== settings.location_keywords.length ||
 				draft.workTypes.length !== (settings.work_types ?? []).length ||
-				draft.workTypes.some((t, i) => t !== (settings.work_types ?? [])[i])));
+				draft.workTypes.some((t, i) => t !== (settings.work_types ?? [])[i]) ||
+				draft.maxDaysOld !== settings.max_days_old));
 
 	// ── Loading state ──────────────────────────────
 	if (isLoading) {
@@ -324,6 +374,7 @@ export function PreferencesPanel() {
 		exclude: [],
 		location: [],
 		workTypes: [],
+		maxDaysOld: 0,
 	};
 
 	// ── Render ─────────────────────────────────────
@@ -438,9 +489,12 @@ export function PreferencesPanel() {
 							<WorkTypeToggle
 								label="Any"
 								selected={display.workTypes.length === 0}
-								onToggle={() =>
-									setDraft((prev) => (prev ? { ...prev, workTypes: [] } : prev))
-								}
+								onToggle={() => {
+									setApplyFeedback("idle");
+									setDraft((prev) =>
+										prev ? { ...prev, workTypes: [] } : prev,
+									);
+								}}
 							/>
 							{["internship", "contract", "part-time", "full-time"].map((t) => (
 								<WorkTypeToggle
@@ -451,7 +505,8 @@ export function PreferencesPanel() {
 											: t.charAt(0).toUpperCase() + t.slice(1)
 									}
 									selected={display.workTypes.includes(t)}
-									onToggle={() =>
+									onToggle={() => {
+										setApplyFeedback("idle");
 										setDraft((prev) =>
 											prev
 												? {
@@ -461,11 +516,51 @@ export function PreferencesPanel() {
 															: [...prev.workTypes, t],
 													}
 												: prev,
-										)
-									}
+										);
+									}}
 								/>
 							))}
 						</div>
+					</div>
+
+					<div>
+						<label className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+							Freshness
+						</label>
+						<div className="flex items-center gap-3">
+							<div className="relative flex-1 h-1.5">
+								<div className="absolute inset-0 rounded-full bg-[#1a2a1a]" />
+								<div
+									className="absolute inset-y-0 left-0 rounded-full bg-[#7dba7a] transition-[width] duration-100"
+									style={{
+										width: `${(snapIndex(display.maxDaysOld) / (SNAP_VALUES.length - 1)) * 100}%`,
+									}}
+								/>
+								<input
+									type="range"
+									min={0}
+									max={SNAP_VALUES.length - 1}
+									step={1}
+									value={snapIndex(display.maxDaysOld)}
+									onChange={(e) => {
+										setApplyFeedback("idle");
+										setDraft((prev) =>
+											prev
+												? {
+														...prev,
+														maxDaysOld: SNAP_VALUES[Number(e.target.value)],
+													}
+												: prev,
+										);
+									}}
+									className="absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-10 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#7dba7a] [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#7dba7a] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+								/>
+							</div>
+							<span className="min-w-[5rem] text-right text-xs text-[#6a7a6a]">
+								{formatDateLabel(display.maxDaysOld)}
+							</span>
+						</div>
+						<div className="mt-1" />
 					</div>
 				</div>
 			</div>

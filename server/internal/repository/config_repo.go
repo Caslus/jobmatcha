@@ -29,6 +29,7 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 			ExcludeKeywords:  []string{},
 			LocationKeywords: []string{},
 			WorkTypes:        []string{},
+			MaxDaysOld:       0,
 		}
 		if err := r.db.Create(&cfg).Error; err != nil {
 			return nil, err
@@ -52,6 +53,6 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 	return &cfg, nil
 }
 
-func (r *ConfigRepo) Update(cfg *model.Config) error {
-	return r.db.Model(&model.Config{}).Where("id = 1").Updates(cfg).Error
+func (r *ConfigRepo) UpdateMap(updates map[string]interface{}) error {
+	return r.db.Model(&model.Config{}).Where("id = 1").Updates(updates).Error
 }

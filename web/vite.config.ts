@@ -11,11 +11,9 @@ const config = defineConfig({
 	plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
 	server: {
 		watch: {
-			ignored: [
-				'**/.*tmp.*'
-			]
-		}
-	}
+			ignored: ["**/.*tmp.*"],
+		},
+	},
 });
 
 export default config;

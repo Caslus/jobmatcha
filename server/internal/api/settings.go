@@ -30,6 +30,7 @@ func (h *SettingsHandler) Get(c *gin.Context) {
 		LocationKeywords: cfg.LocationKeywords,
 		WorkTypes:        cfg.WorkTypes,
 		EmploymentType:   cfg.EmploymentType,
+		MaxDaysOld:       cfg.MaxDaysOld,
 	})
 }
 
@@ -57,36 +58,16 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 	if req.EmploymentType != nil {
 		updates["employment_type"] = *req.EmploymentType
 	}
+	if req.MaxDaysOld != nil {
+		updates["max_days_old"] = *req.MaxDaysOld
+	}
 
 	if len(updates) == 0 {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "no fields to update"})
 		return
 	}
 
-	cfg, err := h.cfgRepo.Get()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
-		return
-	}
-
-	// Apply updates to the config model so GORM serializes StringSlice correctly
-	if kws, ok := updates["include_keywords"]; ok {
-		cfg.IncludeKeywords = kws.(model.StringSlice)
-	}
-	if kws, ok := updates["exclude_keywords"]; ok {
-		cfg.ExcludeKeywords = kws.(model.StringSlice)
-	}
-	if kws, ok := updates["location_keywords"]; ok {
-		cfg.LocationKeywords = kws.(model.StringSlice)
-	}
-	if kws, ok := updates["work_types"]; ok {
-		cfg.WorkTypes = kws.(model.StringSlice)
-	}
-	if et, ok := updates["employment_type"]; ok {
-		cfg.EmploymentType = et.(string)
-	}
-
-	if err := h.cfgRepo.Update(cfg); err != nil {
+	if err := h.cfgRepo.UpdateMap(updates); err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
 		return
 	}

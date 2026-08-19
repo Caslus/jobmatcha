@@ -46,6 +46,20 @@ func (h *RoleHandler) List(c *gin.Context) {
 		return
 	}
 
+	// Filter by max age if set
+	maxDays := cfg.MaxDaysOld
+	if maxDays > 0 {
+		// +1 day buffer so a job posted 26h ago (shown as "1d") still qualifies
+		cutoff := time.Now().AddDate(0, 0, -(maxDays + 1))
+		var recent []model.Role
+		for _, r := range roles {
+			if r.PostedAt != nil && r.PostedAt.After(cutoff) {
+				recent = append(recent, r)
+			}
+		}
+		roles = recent
+	}
+
 	// Score and filter
 	scored := filter.FilterRoles(roles)
 
