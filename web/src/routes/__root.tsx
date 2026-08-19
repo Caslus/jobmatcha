@@ -48,7 +48,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
-			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[#7dba7a]/30">
+			<body className="font-sans antialiased wrap-anywhere selection:bg-[#7dba7a]/30">
+				<div className="bg-glow" />
 				<Header />
 				{children}
 				<TanStackDevtools

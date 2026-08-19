@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Particles } from "#/components/ui/particles.tsx";
 import { useChangePassword } from "../hooks/useApi";
 import { useAuthStore } from "../stores/auth";
 
@@ -45,7 +46,17 @@ function OnboardingPage() {
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-[#080908]">
+		<div className="flex min-h-screen items-center justify-center">
+			<div className="fixed -z-10 h-[200%] w-[200%]">
+				<Particles
+					className="w-full h-full opacity-20"
+					color="#7dba7a"
+					vy={-0.3}
+					size={20}
+					staticity={70}
+					quantity={40}
+				/>
+			</div>
 			<div className="w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl">
 				<div className="mb-8 text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7dba7a] to-[#4a7c4f] shadow-lg shadow-[#7dba7a]/20">

@@ -206,7 +206,7 @@ function DashboardPage() {
 	};
 
 	return (
-		<div className="flex h-screen flex-col bg-[#080908] text-[#e8e8e8]">
+		<div className="flex h-screen flex-col text-[#e8e8e8]">
 			<header className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
 				<div className="flex items-center gap-3">
 					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#7dba7a] to-[#4a7c4f]">
