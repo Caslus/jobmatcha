@@ -1,4 +1,4 @@
-import ky from "ky";
+import ky, { type HTTPError } from "ky";
 import type {
 	AuthStatusResponse,
 	AuthTokenResponse,
@@ -50,9 +50,10 @@ export const api = ky.create({
 		],
 		beforeError: [
 			({ error }) => {
-				const data = (error as any).data as ErrorResponse | undefined;
+				const httpError = error as HTTPError;
+				const data = httpError.data as ErrorResponse | undefined;
 				if (data?.error) {
-					(error as any).message = data.error;
+					httpError.message = data.error;
 				}
 				return error;
 			},

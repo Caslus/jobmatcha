@@ -45,11 +45,6 @@ function LoginPage() {
 		loginMutation.mutate(password);
 	};
 
-	const handleRetry = () => {
-		loginMutation.reset();
-		setPassword("");
-	};
-
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-[#080908]">
 			<div className="w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl">

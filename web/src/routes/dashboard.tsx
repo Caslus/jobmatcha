@@ -57,7 +57,6 @@ function saveState(left: number, right: number) {
 }
 
 function ResizeHandle({
-	side,
 	onMouseDown,
 }: {
 	side: "left" | "right";
