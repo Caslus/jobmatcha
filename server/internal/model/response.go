@@ -62,19 +62,20 @@ type RoleListResponse struct {
 }
 
 type RoleDetailResponse struct {
-	ID             uint         `json:"id"`
-	CompanyID      uint         `json:"company_id"`
-	CompanyName    string       `json:"company_name"`
-	Title          string       `json:"title"`
-	Department     string       `json:"department"`
-	Location       string       `json:"location"`
-	Description    string       `json:"description"`
-	URL            string       `json:"url"`
-	PostedAt       *time.Time   `json:"posted_at"`
-	RelevanceScore int          `json:"relevance_score"`
-	MatchPercent   int          `json:"match_percent"`
-	MatchReasons   []string     `json:"match_reasons,omitempty"`
-	MatchDetails   *MatchDetails `json:"match_details,omitempty"`
-	IsHidden       bool         `json:"is_hidden"`
-	IsInterested   bool         `json:"is_interested"`
+	ID                uint          `json:"id"`
+	CompanyID         uint          `json:"company_id"`
+	CompanyName       string        `json:"company_name"`
+	Title             string        `json:"title"`
+	Department        string        `json:"department"`
+	Location          string        `json:"location"`
+	Description       string        `json:"description"`
+	DescriptionFormat string        `json:"description_format"`
+	URL               string        `json:"url"`
+	PostedAt          *time.Time    `json:"posted_at"`
+	RelevanceScore    int           `json:"relevance_score"`
+	MatchPercent      int           `json:"match_percent"`
+	MatchReasons      []string      `json:"match_reasons,omitempty"`
+	MatchDetails      *MatchDetails `json:"match_details,omitempty"`
+	IsHidden          bool          `json:"is_hidden"`
+	IsInterested      bool          `json:"is_interested"`
 }

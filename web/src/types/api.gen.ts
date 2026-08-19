@@ -113,6 +113,7 @@ export interface RoleDetailResponse {
   department: string;
   location: string;
   description: string;
+  description_format: string;
   url: string;
   posted_at?: any /* time.Time */;
   relevance_score: number /* int */;
@@ -135,6 +136,7 @@ export interface Role {
   department: string;
   location: string;
   description: string;
+  description_format: string;
   posted_at?: any /* time.Time */;
   status: string;
   is_hidden: boolean;

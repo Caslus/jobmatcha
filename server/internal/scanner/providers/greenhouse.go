@@ -74,17 +74,23 @@ func (p *Greenhouse) Fetch(ctx context.Context, company *model.Company) ([]*mode
 			dept = j.Departments[0].Name
 		}
 
-		description := StripHTML(j.Content, 12000)
+		// Store raw HTML content from Greenhouse — it's already structured.
+		description := j.Content
+		descriptionFormat := "html"
+		if len(description) > 12000 {
+			description = description[:12000]
+		}
 		postedAt := parseDate(j.UpdatedAt)
 
 		roles = append(roles, &model.Role{
-			Title:       strings.TrimSpace(j.Title),
-			URL:         j.AbsoluteURL,
-			Department:  dept,
-			Location:    locName,
-			Description: description,
-			PostedAt:    postedAt,
-			Status:      "seen",
+			Title:             strings.TrimSpace(j.Title),
+			URL:               j.AbsoluteURL,
+			Department:        dept,
+			Location:          locName,
+			Description:       description,
+			DescriptionFormat: descriptionFormat,
+			PostedAt:          postedAt,
+			Status:            "seen",
 		})
 	}
 	return roles, nil

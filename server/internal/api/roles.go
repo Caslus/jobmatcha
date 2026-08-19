@@ -202,21 +202,22 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.RoleDetailResponse{
-		ID:             role.ID,
-		CompanyID:      role.CompanyID,
-		CompanyName:    role.Company.Name,
-		Title:          role.Title,
-		Department:     role.Department,
-		Location:       role.Location,
-		Description:    role.Description,
-		URL:            role.URL,
-		PostedAt:       role.PostedAt,
-		RelevanceScore: score,
-		MatchPercent:   percent,
-		MatchReasons:   reasons,
-		MatchDetails:   details,
-		IsHidden:       role.IsHidden,
-		IsInterested:   role.IsInterested,
+		ID:                role.ID,
+		CompanyID:         role.CompanyID,
+		CompanyName:       role.Company.Name,
+		Title:             role.Title,
+		Department:        role.Department,
+		Location:          role.Location,
+		Description:       role.Description,
+		DescriptionFormat: role.DescriptionFormat,
+		URL:               role.URL,
+		PostedAt:          role.PostedAt,
+		RelevanceScore:    score,
+		MatchPercent:      percent,
+		MatchReasons:      reasons,
+		MatchDetails:      details,
+		IsHidden:          role.IsHidden,
+		IsInterested:      role.IsInterested,
 	})
 }
 

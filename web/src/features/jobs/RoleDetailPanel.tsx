@@ -1,7 +1,9 @@
 import { FileText, FolderTree, Globe, MapPin, User, Zap } from "lucide-react";
 import { usePatchRole, useRole } from "../../hooks/useApi";
 import { matchLabel, scoreColor } from "../../lib/dashboard";
+import type { DescriptionFormat } from "../../lib/description";
 import type { RoleDetailResponse } from "../../types/api.gen";
+import { JobDescription } from "./JobDescription";
 
 interface RoleDetailPanelProps {
 	selectedId: number | null;
@@ -104,9 +106,10 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 						<p className="mb-2 text-xs font-medium text-[#6a7a6a]">
 							Description
 						</p>
-						<p className="text-sm leading-relaxed text-[#9a9a9a]">
-							{role.description || "No description loaded"}
-						</p>
+						<JobDescription
+							description={role.description || ""}
+							format={(role.description_format as DescriptionFormat) || "plain"}
+						/>
 					</div>
 				</div>
 			</div>

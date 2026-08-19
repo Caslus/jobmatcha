@@ -120,6 +120,7 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 		}
 
 		// Fetch markdown description from Workable's .md endpoint
+		// Store the raw markdown — it's already clean and well-structured.
 		if j.Shortcode != "" {
 			mdURL := fmt.Sprintf("https://apply.workable.com/%s/jobs/view/%s.md", slug, j.Shortcode)
 			mdReq, err := http.NewRequestWithContext(ctx, "GET", mdURL, nil)
@@ -128,7 +129,8 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 				mdResp, mdErr := p.HTTPClient.Do(mdReq)
 				if mdErr == nil && mdResp.StatusCode == http.StatusOK {
 					mdBody, _ := io.ReadAll(mdResp.Body)
-					role.Description = StripHTML(string(mdBody), 12000)
+					role.Description = string(mdBody)
+					role.DescriptionFormat = "markdown"
 					mdResp.Body.Close()
 				} else if mdResp != nil {
 					mdResp.Body.Close()
@@ -136,9 +138,10 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 			}
 		}
 
-		// Fallback to widget description
+		// Fallback to widget description (plain text)
 		if role.Description == "" && j.Description != "" {
 			role.Description = StripHTML(j.Description, 12000)
+			role.DescriptionFormat = "plain"
 		}
 
 		byURL[uid] = &workableRole{role: role, locParts: locParts}
