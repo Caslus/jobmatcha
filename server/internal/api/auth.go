@@ -34,13 +34,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.BindJSON(&req)
 
 	if req.Password == "" {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "password is required"})
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Password is required."})
 		return
 	}
 
 	cfg, err := h.cfgRepo.Get()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	token, err := h.createSession()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) Status(c *gin.Context) {
 	cfg, err := h.cfgRepo.Get()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -102,24 +102,24 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	c.BindJSON(&req)
 
 	if req.CurrentPassword == "" || req.NewPassword == "" {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "both passwords are required"})
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Both passwords are required."})
 		return
 	}
 
 	cfg, err := h.cfgRepo.Get()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(cfg.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "current password is incorrect"})
+		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Current password is incorrect."})
 		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcryptCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		"password_hash":  string(hash),
 		"setup_complete": true,
 	}); err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -178,14 +178,14 @@ func Authenticated(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := extractToken(c)
 		if token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "not authenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Not authenticated."})
 			return
 		}
 
 		var session model.Session
 		result := db.Where("token = ? AND expires_at > ?", token, time.Now()).Find(&session)
 		if result.RowsAffected == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "not authenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Not authenticated."})
 			return
 		}
 

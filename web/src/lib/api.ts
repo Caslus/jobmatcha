@@ -2,8 +2,10 @@ import ky from "ky";
 import type {
 	AuthStatusResponse,
 	AuthTokenResponse,
+	ErrorResponse,
 	RoleDetailResponse,
 	RoleListResponse,
+	ScanJobResponse,
 	SettingsResponse,
 	SettingsUpdateRequest,
 } from "@/types/api.gen";
@@ -44,6 +46,15 @@ export const api = ky.create({
 				if (token) {
 					request.headers.set("Authorization", `Bearer ${token}`);
 				}
+			},
+		],
+		beforeError: [
+			({ error }) => {
+				const data = (error as any).data as ErrorResponse | undefined;
+				if (data?.error) {
+					(error as any).message = data.error;
+				}
+				return error;
 			},
 		],
 	},
@@ -101,7 +112,7 @@ export const settingsApi = {
 
 // Scan
 export const scanApi = {
-	start: () => api.post("scan").json(),
-	get: (id: number) => api.get(`scan/${id}`).json(),
-	getLatest: () => api.get("scan/latest").json(),
+	start: () => api.post("scan").json<ScanJobResponse>(),
+	get: (id: number) => api.get(`scan/${id}`).json<ScanJobResponse>(),
+	getLatest: () => api.get("scan/latest").json<ScanJobResponse>(),
 };

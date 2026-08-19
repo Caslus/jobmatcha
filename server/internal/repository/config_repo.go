@@ -50,7 +50,22 @@ func (r *ConfigRepo) Get() (*model.Config, error) {
 			return nil, err
 		}
 	}
+	normalizeConfig(&cfg)
 	return &cfg, nil
+}
+func normalizeConfig(cfg *model.Config) {
+	if cfg.IncludeKeywords == nil {
+		cfg.IncludeKeywords = model.StringSlice{}
+	}
+	if cfg.ExcludeKeywords == nil {
+		cfg.ExcludeKeywords = model.StringSlice{}
+	}
+	if cfg.LocationKeywords == nil {
+		cfg.LocationKeywords = model.StringSlice{}
+	}
+	if cfg.WorkTypes == nil {
+		cfg.WorkTypes = model.StringSlice{}
+	}
 }
 
 func (r *ConfigRepo) UpdateMap(updates map[string]interface{}) error {

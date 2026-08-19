@@ -20,7 +20,7 @@ func NewSettingsHandler(cfgRepo *repository.ConfigRepo) *SettingsHandler {
 func (h *SettingsHandler) Get(c *gin.Context) {
 	cfg, err := h.cfgRepo.Get()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 
@@ -38,7 +38,7 @@ func (h *SettingsHandler) Get(c *gin.Context) {
 func (h *SettingsHandler) Update(c *gin.Context) {
 	var req model.SettingsUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "invalid request"})
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid request."})
 		return
 	}
 
@@ -63,12 +63,12 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 	}
 
 	if len(updates) == 0 {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "no fields to update"})
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "No fields to update."})
 		return
 	}
 
 	if err := h.cfgRepo.UpdateMap(updates); err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 

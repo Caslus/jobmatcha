@@ -21,28 +21,33 @@ func NewScanHandler(svc *service.ScannerService) *ScanHandler {
 func (h *ScanHandler) Start(c *gin.Context) {
 	jobID, err := h.svc.StartScan()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "failed to start scan"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to start scan."})
 		return
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{"scan_id": jobID, "status": "pending"})
+	// c.JSON(http.StatusAccepted, gin.H{"scan_id": jobID, "status": "pending"})
+	response := model.ScanJobResponse{
+		ID:     jobID,
+		Status: "pending",
+	}
+	c.JSON(http.StatusAccepted, response)
 }
 
 // GET /api/scan/:id — returns a scan job by ID.
 func (h *ScanHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "invalid scan id"})
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid scan ID."})
 		return
 	}
 
 	job, err := h.svc.GetJob(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 	if job == nil {
-		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "scan not found"})
+		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "Scan not found."})
 		return
 	}
 
@@ -53,11 +58,11 @@ func (h *ScanHandler) GetByID(c *gin.Context) {
 func (h *ScanHandler) GetLatest(c *gin.Context) {
 	job, err := h.svc.GetLatestJob()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal error"})
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
 	if job == nil {
-		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "no scans yet"})
+		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "No scans yet."})
 		return
 	}
 

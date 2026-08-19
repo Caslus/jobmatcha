@@ -38,7 +38,8 @@ function OnboardingPage() {
 			{ currentPassword: current, newPassword: next },
 			{
 				onSuccess: () => navigate({ to: "/dashboard" }),
-				onError: () => setError("Failed to change password"),
+				onError: (err) =>
+					setError((err as Error).message || "Failed to change password"),
 			},
 		);
 	};

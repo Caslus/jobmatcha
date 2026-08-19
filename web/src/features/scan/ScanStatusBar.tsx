@@ -1,9 +1,10 @@
 import { Settings } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { ScanJobResponse } from "#/types/api.gen.ts";
 import { scanApi } from "../../lib/api";
 
 export function ScanStatusBar() {
-	const [scanJob, setScanJob] = useState<any>(null);
+	const [scanJob, setScanJob] = useState<ScanJobResponse | null>(null);
 	const [scanning, setScanning] = useState(false);
 	const [showScheduled, setShowScheduled] = useState(false);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -12,7 +13,7 @@ export function ScanStatusBar() {
 	useEffect(() => {
 		scanApi
 			.getLatest()
-			.then((job: any) => {
+			.then((job) => {
 				if (job) {
 					setScanJob(job);
 					if (job.status === "pending" || job.status === "running") {
@@ -43,9 +44,10 @@ export function ScanStatusBar() {
 
 	const startScan = async () => {
 		try {
-			const resp: any = await scanApi.start();
+			const resp = await scanApi.start();
+			console.log("Scan started:", resp);
 			setScanning(true);
-			startPolling(resp.scan_id);
+			startPolling(resp.id);
 		} catch {
 			setScanning(false);
 		}

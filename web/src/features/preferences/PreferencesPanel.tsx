@@ -254,11 +254,11 @@ export function PreferencesPanel() {
 	useEffect(() => {
 		if (settings)
 			setDraft({
-				include: [...settings.include_keywords],
-				exclude: [...settings.exclude_keywords],
-				location: [...settings.location_keywords],
+				include: [...(settings.include_keywords ?? [])],
+				exclude: [...(settings.exclude_keywords ?? [])],
+				location: [...(settings.location_keywords ?? [])],
 				workTypes: [...(settings.work_types ?? [])],
-				maxDaysOld: settings.max_days_old,
+				maxDaysOld: settings.max_days_old ?? 0,
 			});
 	}, [settings]);
 
