@@ -1,6 +1,6 @@
 import { Bookmark, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useRoles } from "../../hooks/useApi";
+import { usePatchRole, useRoles } from "../../hooks/useApi";
 import { matchLabel, scoreColor, timeAgo } from "../../lib/dashboard";
 import type { RoleListItem } from "../../types/api.gen";
 
@@ -19,6 +19,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 	const [scrollProgress, setScrollProgress] = useState(0);
 	const [animating, setAnimating] = useState(false);
 	const animTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+	const patchRole = usePatchRole();
 
 	const goToPage = (fn: (p: number) => number) => {
 		setPage(fn);
@@ -53,7 +54,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 					</span>
 				</div>
 				<div className="flex items-center gap-2 text-xs text-[#6a7a6a]">
-					<span className="w-16 text-right">Match</span>
+					<span className="w-16 text-right pr-5">Match</span>
 				</div>
 			</div>
 
@@ -75,18 +76,20 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 				) : (
 					<div className="space-y-1 p-2">
 						{roles.map((role) => (
-							<button
-								type="button"
+							<div
 								key={role.id}
-								onClick={() => onSelect(role.id)}
-								className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+								className={`flex items-center rounded-xl border px-4 py-3 transition ${
 									selectedId === role.id
 										? "border-[#7dba7a]/40 bg-[#1a2a1a]"
 										: "border-transparent bg-transparent hover:bg-[#0d120d]"
 								}`}
 							>
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0 flex-1">
+								<button
+									type="button"
+									onClick={() => onSelect(role.id)}
+									className="flex-1 text-left"
+								>
+									<div className="min-w-0">
 										<p className="truncate text-sm font-medium text-[#e8e8e8]">
 											{role.title}
 										</p>
@@ -104,22 +107,40 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 											{timeAgo(role.posted_at)}
 										</p>
 									</div>
-									<div className="flex flex-col items-end gap-1">
-										<span
-											className={`inline-flex min-w-[2rem] items-center justify-center rounded-md border px-2 py-0.5 text-sm font-semibold ${scoreColor(role.match_percent ?? 0)}`}
-										>
-											{matchLabel(role.match_percent ?? 0)}
-										</span>
-										{role.is_interested && (
-											<Bookmark
-												size={12}
-												className="text-[#7dba7a]"
-												fill="#7dba7a"
-											/>
-										)}
-									</div>
+								</button>
+								<div className="flex items-center gap-1.5 shrink-0">
+									<button
+										type="button"
+										onClick={(e) => {
+											e.stopPropagation();
+											patchRole.mutate({
+												id: role.id,
+												is_interested: !role.is_interested,
+											});
+										}}
+										className="cursor-pointer rounded p-0.5 transition hover:text-[#7dba7a]"
+										aria-label={
+											role.is_interested
+												? "Remove bookmark"
+												: "Bookmark this role"
+										}
+									>
+										<Bookmark
+											size={14}
+											className={`hover:fill-[#7dba7a44] ${
+												role.is_interested
+													? "fill-[#7dba7a] text-[#7dba7a]"
+													: "text-[#4a5a4a]"
+											}`}
+										/>
+									</button>
+									<span
+										className={`inline-flex min-w-8 items-center justify-center rounded-md border px-2 py-0.5 text-sm font-semibold ${scoreColor(role.match_percent ?? 0)}`}
+									>
+										✦ {matchLabel(role.match_percent ?? 0)}
+									</span>
 								</div>
-							</button>
+							</div>
 						))}
 					</div>
 				)}

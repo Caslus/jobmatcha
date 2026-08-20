@@ -16,7 +16,12 @@ export default function Header() {
 	return (
 		<header className="flex items-center justify-between border-b border-[#1a2a1a] px-6 py-3">
 			<div className="flex items-center gap-3">
-				<img src={wordmark} alt="jobmatcha" className="mx-auto h-10" />
+				<img
+					src={wordmark}
+					alt="jobmatcha"
+					draggable="false"
+					className="mx-auto h-10 select-none"
+				/>
 			</div>
 			<button
 				type="button"

@@ -59,7 +59,7 @@ function OnboardingPage() {
 			</div>
 			<div className="w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl">
 				<div className="mb-8 text-center">
-					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7dba7a] to-[#4a7c4f] shadow-lg shadow-[#7dba7a]/20">
+					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-[#7dba7a] to-[#4a7c4f] shadow-lg shadow-[#7dba7a]/20">
 						<span className="text-2xl">🔐</span>
 					</div>
 					<h1 className="text-2xl font-bold text-[#e8e8e8]">
@@ -124,7 +124,7 @@ function OnboardingPage() {
 						disabled={
 							changePasswordMutation.isPending || !current || !next || !confirm
 						}
-						className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+						className="w-full rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{changePasswordMutation.isPending ? "Setting..." : "Set Password"}
 					</button>

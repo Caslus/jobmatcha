@@ -1,6 +1,19 @@
-import { FileText, FolderTree, Globe, MapPin, User, Zap } from "lucide-react";
+import {
+	Bookmark,
+	Calendar,
+	ExternalLink,
+	FileText,
+	FolderTree,
+	Globe,
+	MapPin,
+	User,
+	X,
+	Zap,
+} from "lucide-react";
+import { Tooltip } from "../../components/Tooltip";
 import { usePatchRole, useRole } from "../../hooks/useApi";
-import { matchLabel, scoreColor } from "../../lib/dashboard";
+import { matchLabel, scoreColor, timeAgo } from "../../lib/dashboard";
+import { formatDate } from "../../lib/date";
 import type { DescriptionFormat } from "../../lib/description";
 import type { RoleDetailResponse } from "../../types/api.gen";
 import { JobDescription } from "./JobDescription";
@@ -24,37 +37,52 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 		);
 	}
 
-	const handleToggleInterested = () => {
+	const handleToggleBookmark = () => {
 		patchRole.mutate({ id: role.id, is_interested: !role.is_interested });
-	};
-
-	const handleToggleHidden = () => {
-		patchRole.mutate({ id: role.id, is_hidden: !role.is_hidden });
 	};
 
 	return (
 		<aside className="w-full h-full overflow-y-auto">
 			<div className="p-6">
-				<button
-					type="button"
-					onClick={onBack}
-					className="mb-4 text-sm text-[#6a7a6a] transition hover:text-[#e8e8e8]"
-				>
-					← Back to list
-				</button>
-
 				<div className="mb-6">
-					<p className="text-sm text-[#6a7a6a]">{role.company_name}</p>
-					<h3 className="mt-1 text-lg font-bold text-[#e8e8e8]">
-						{role.title}
-					</h3>
-					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[#6a7a6a]">
-						<span className="flex items-center gap-1">{role.location}</span>
-						<span
-							className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-semibold ${scoreColor(role.match_percent)}`}
+					<div className="flex items-center justify-between gap-3">
+						<div>
+							<p className="text-sm text-[#6a7a6a]">{role.company_name}</p>
+							<h3 className="mt-1 text-lg font-bold text-[#e8e8e8]">
+								{role.title}
+							</h3>
+						</div>
+						<button
+							type="button"
+							onClick={onBack}
+							className="rounded-lg p-1 text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
 						>
-							✦ Match: {matchLabel(role.match_percent)}
-						</span>
+							<X size={16} />
+						</button>
+					</div>
+					<div className="mt-3 flex items-start gap-3 text-sm text-[#6a7a6a]">
+						<div className="flex flex-col gap-1">
+							<span className="flex items-center gap-1">
+								<Globe size={12} />
+								{role.location}
+							</span>
+							{role.department && (
+								<span className="flex items-center gap-1">
+									<FolderTree size={12} />
+									{role.department}
+								</span>
+							)}
+							{role.posted_at && (
+								<span className="flex items-center gap-1">
+									<Calendar size={12} />
+									<Tooltip content={formatDate(role.posted_at)}>
+										<span className="border-b border-dotted border-[#4a5a4a]">
+											{timeAgo(role.posted_at)}
+										</span>
+									</Tooltip>
+								</span>
+							)}
+						</div>
 					</div>
 				</div>
 
@@ -62,45 +90,40 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 					<div className="flex gap-2">
 						<button
 							type="button"
-							onClick={handleToggleInterested}
+							onClick={handleToggleBookmark}
 							disabled={patchRole.isPending}
-							className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
+							className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition ${
 								role.is_interested
 									? "border-[#7dba7a] bg-[#7dba7a]/10 text-[#7dba7a]"
 									: "border-[#2a3a2a] text-[#6a7a6a] hover:border-[#7dba7a]/50 hover:text-[#7dba7a]"
 							}`}
 						>
-							{patchRole.isPending
-								? "Updating..."
-								: role.is_interested
-									? "★ Interested"
-									: "☆ Mark Interested"}
+							{patchRole.isPending ? (
+								"Updating..."
+							) : (
+								<>
+									<Bookmark
+										size={14}
+										className={role.is_interested ? "fill-[#7dba7a]" : ""}
+									/>
+									{role.is_interested ? "Bookmarked" : "Bookmark"}
+								</>
+							)}
 						</button>
-						<button
-							type="button"
-							onClick={handleToggleHidden}
-							disabled={patchRole.isPending}
-							className="flex-1 rounded-lg border border-[#2a3a2a] px-4 py-2 text-sm font-medium text-[#6a7a6a] transition hover:border-red-400/50 hover:text-red-400"
-						>
-							{role.is_hidden ? "Unhide" : "Hide"}
-						</button>
-					</div>
-
-					{role.match_details && <MatchAnalysisCard role={role} />}
-
-					{role.url && (
-						<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
-							<p className="mb-2 text-xs font-medium text-[#6a7a6a]">Job URL</p>
+						{role.url && (
 							<a
 								href={role.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="break-all text-sm text-[#7dba7a] transition hover:underline"
+								className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[#2a3a2a] bg-[#0d120d] px-4 py-2 text-sm text-[#9a9a9a] transition hover:border-[#7dba7a]/50 hover:text-[#e8e8e8]"
 							>
-								{role.url}
+								<ExternalLink size={14} />
+								<span>Visit Website</span>
 							</a>
-						</div>
-					)}
+						)}
+					</div>
+
+					{role.match_details && <MatchAnalysisCard role={role} />}
 
 					<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
 						<p className="mb-2 text-xs font-medium text-[#6a7a6a]">
@@ -122,7 +145,23 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 	if (!d) return null;
 	return (
 		<div className="rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-4">
-			<p className="mb-3 text-xs font-medium text-[#6a7a6a]">Match Analysis</p>
+			<div className="flex items-center justify-between mb-3 w-full">
+				<p className="text-xs font-medium text-[#6a7a6a]">Match Analysis</p>
+				<span className="text-xs text-[#6a7a6a]">
+					{d.matched_keywords}/{d.total_keywords} keywords
+				</span>
+			</div>
+
+			<div className="relative flex items-center justify-center gap-3">
+				<div className="h-px flex-1 bg-linear-to-r from-transparent via-[#2a3a2a] to-[#2a3a2a]" />
+				<span
+					className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-sm font-semibold 
+					${scoreColor(role.match_percent)}`}
+				>
+					✦ Match: {matchLabel(role.match_percent)}
+				</span>
+				<div className="h-px flex-1 bg-linear-to-r from-[#2a3a2a] via-[#2a3a2a] to-transparent" />
+			</div>
 
 			<div className="space-y-1.5 mb-3">
 				{role.match_reasons?.map((r: string) => {
@@ -231,13 +270,15 @@ function MatchAnalysisCard({ role }: { role: RoleDetailResponse }) {
 				</div>
 			</div>
 
-			<div className="mt-3 flex items-center gap-3 rounded-lg bg-[#080908] px-3 py-2">
-				<span className={`text-sm font-bold ${scoreColor(d.percent)}`}>
+			<div className="mt-3 flex items-center gap-3 rounded-lg bg-[#080908] border border-[#1a2a1a] px-3 py-2">
+				<span
+					className={`text-sm font-bold rounded-md p-1 ${scoreColor(d.percent)}`}
+				>
 					{matchLabel(d.percent)}
 				</span>
 				<div className="flex-1 h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
 					<div
-						className={`h-full rounded-full transition-all ${d.percent >= 70 ? "bg-[#7dba7a]" : d.percent >= 40 ? "bg-amber-400" : "bg-[#4a5a4a]"}`}
+						className={`h-full rounded-full transition-all ${d.percent === 100 ? "bg-purple-400" : d.percent >= 70 ? "bg-[#7dba7a]" : d.percent >= 40 ? "bg-amber-400" : "bg-[#4a5a4a]"}`}
 						style={{ width: `${d.percent}%` }}
 					/>
 				</div>

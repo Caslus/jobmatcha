@@ -10,7 +10,7 @@ import { useAuthStore } from "../stores/auth";
 // ── Resizable Panel Layout ─────────────────────────
 
 const STORAGE_KEY = "jobmatcha_panel_widths";
-const MIN_PCT = 10;
+const MIN_PCT = 15;
 const COLLAPSE_THRESHOLD = 8;
 const MAX_PCT = 80;
 const DEFAULT_LEFT = 20;

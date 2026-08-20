@@ -41,7 +41,7 @@ function ToggleSwitch({
 		>
 			<span
 				className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-					checked ? "translate-x-[18px]" : "translate-x-[3px]"
+					checked ? "translate-x-4.5" : "translate-x-0.75"
 				}`}
 			/>
 		</button>
@@ -155,7 +155,7 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 							onClose();
 						}}
 						disabled={scanning}
-						className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+						className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Play size={14} className={scanning ? "hidden" : ""} />
 						{scanning ? "Scanning..." : "Run Manual Scan"}
@@ -312,7 +312,7 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 							type="button"
 							onClick={handleSave}
 							disabled={!canSave || updateSettings.isPending}
-							className="flex-1 rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-xs font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+							className="flex-1 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-xs font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{updateSettings.isPending ? "Saving..." : "Save"}
 						</button>

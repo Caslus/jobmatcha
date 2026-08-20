@@ -12,6 +12,8 @@ export function timeAgo(dateStr: string | null): string {
 }
 
 export function scoreColor(percent: number): string {
+	if (percent === 100)
+		return "text-purple-400 bg-purple-400/10 border-purple-400/20";
 	if (percent >= 70)
 		return "text-green-400 bg-green-400/10 border-green-400/20";
 	if (percent >= 40)

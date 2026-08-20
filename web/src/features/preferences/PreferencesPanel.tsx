@@ -114,7 +114,7 @@ function KeywordSection({
 	const c = chipColors[highlight];
 	return (
 		<div>
-			<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+			<span className="mb-2 block text-xs font-medium uppercase tracking-wider text-[#4a5a4a]">
 				{label}
 			</span>
 			{showInput && (
@@ -408,7 +408,7 @@ export function PreferencesPanel() {
 						disabled={!hasChanges || applyFeedback === "saving"}
 						className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
 							hasChanges && applyFeedback !== "saving"
-								? "bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] text-[#080908] hover:from-[#8dca8a] hover:to-[#6a9f6a]"
+								? "bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] text-[#080908] hover:from-[#8dca8a] hover:to-[#6a9f6a]"
 								: "cursor-not-allowed bg-[#1a2a1a] text-[#4a5a4a]"
 						}`}
 					>
@@ -500,7 +500,7 @@ export function PreferencesPanel() {
 					/>
 
 					<div>
-						<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+						<span className="mb-2 block text-xs font-medium uppercase tracking-wider text-[#4a5a4a]">
 							Work Type
 						</span>
 						<div className="flex flex-wrap gap-1.5">
@@ -542,7 +542,7 @@ export function PreferencesPanel() {
 					</div>
 
 					<div>
-						<span className="mb-2 block text-xs font-medium uppercase tracking-[0.05em] text-[#4a5a4a]">
+						<span className="mb-2 block text-xs font-medium uppercase tracking-wider text-[#4a5a4a]">
 							Freshness
 						</span>
 						<div className="flex items-center gap-3">
@@ -574,7 +574,7 @@ export function PreferencesPanel() {
 									className="absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-10 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#7dba7a] [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#7dba7a] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
 								/>
 							</div>
-							<span className="min-w-[5rem] text-right text-xs text-[#6a7a6a]">
+							<span className="min-w-20 text-right text-xs text-[#6a7a6a]">
 								{formatDateLabel(display.maxDaysOld)}
 							</span>
 						</div>

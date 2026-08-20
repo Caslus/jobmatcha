@@ -138,7 +138,7 @@ export function ScanStatusBar() {
 					<div>
 						<div className="h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
 							<div
-								className="h-full rounded-full bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] transition-all duration-500"
+								className="h-full rounded-full bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] transition-all duration-500"
 								style={{
 									width: `${Math.round((scanJob.completed_companies / scanJob.total_companies) * 100)}%`,
 								}}
