@@ -1,4 +1,4 @@
-import { Bookmark, Clock } from "lucide-react";
+import { Bookmark, ChevronDown, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePatchRole, useRoles } from "../../hooks/useApi";
 import { matchLabel, scoreColor, timeAgo } from "../../lib/dashboard";
@@ -108,7 +108,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 										</p>
 									</div>
 								</button>
-								<div className="flex items-center gap-1.5 shrink-0">
+								<div className="flex shrink-0 items-center gap-1.5">
 									<button
 										type="button"
 										onClick={(e) => {
@@ -147,17 +147,29 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 			</div>
 
 			{totalPages > 1 && (
-				<div className="border-t border-[#1a2a1a] px-6 py-3">
-					<div className="flex items-center justify-between">
+				<div className="relative border-t border-[#1a2a1a] px-6 py-3">
+					<div
+						className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transition-opacity duration-300"
+						style={{
+							opacity: scrollProgress < 0.95 ? 1 : 0,
+						}}
+					>
+						<div
+							className={`flex items-center justify-center rounded-full bg-[#1a2a1a] p-1.5 aspect-square animate-bounce`}
+						>
+							<ChevronDown size={14} className="text-[#7dba7a]" />
+						</div>
+					</div>
+					<div className="grid grid-cols-3 items-center">
 						<button
 							type="button"
 							onClick={() => goToPage((p) => Math.max(1, p - 1))}
 							disabled={page <= 1}
-							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+							className="justify-self-start rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
 						>
 							Previous
 						</button>
-						<div className="flex flex-col items-center gap-1.5">
+						<div className="flex flex-col items-center gap-1.5 justify-self-center">
 							<span className="text-xs text-[#4a5a4a]">
 								Page {page} of {totalPages}
 							</span>
@@ -172,7 +184,7 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 							type="button"
 							onClick={() => goToPage((p) => Math.min(totalPages, p + 1))}
 							disabled={page >= totalPages}
-							className="rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
+							className="justify-self-end rounded-lg px-3 py-1.5 text-sm text-[#6a7a6a] transition hover:bg-[#1a2a1a] disabled:opacity-30"
 						>
 							Next
 						</button>
