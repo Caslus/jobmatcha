@@ -6,6 +6,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import wordmark from "@/assets/wordmark.svg";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
 
@@ -14,6 +15,10 @@ interface MyRouterContext {
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var root=document.documentElement;root.classList.add('dark');root.style.colorScheme='dark';}catch(e){}})();`;
+
+const title = "jobmatcha";
+const description =
+	"Relevance-based job search assistant that helps you find the best job opportunities tailored to your preferences and skills.";
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	head: () => ({
@@ -26,7 +31,27 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "jobmatcha",
+				title: title,
+			},
+			{
+				name: "description",
+				content: description,
+			},
+			{
+				property: "og:title",
+				content: title,
+			},
+			{
+				property: "og:description",
+				content: description,
+			},
+			{
+				property: "og:image",
+				content: wordmark,
+			},
+			{
+				property: "og:url",
+				content: window.location.href,
 			},
 		],
 		links: [
