@@ -66,6 +66,12 @@ func normalizeConfig(cfg *model.Config) {
 	if cfg.WorkTypes == nil {
 		cfg.WorkTypes = model.StringSlice{}
 	}
+	if cfg.ScanCronExpr == "" {
+		cfg.ScanCronExpr = "0 */6 * * *"
+	}
+	if cfg.ScanTimezone == "" {
+		cfg.ScanTimezone = "UTC"
+	}
 }
 
 func (r *ConfigRepo) UpdateMap(updates map[string]interface{}) error {

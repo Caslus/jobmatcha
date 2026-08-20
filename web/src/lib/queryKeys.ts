@@ -13,4 +13,9 @@ export const queryKeys = {
 	settings: {
 		all: ["settings"] as const,
 	},
+	scan: {
+		all: ["scan"] as const,
+		latest: () => [...queryKeys.scan.all, "latest"] as const,
+		detail: (id: number) => [...queryKeys.scan.all, "detail", id] as const,
+	},
 };

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { authApi, rolesApi, settingsApi } from "../lib/api";
+import { authApi, rolesApi, scanApi, settingsApi } from "../lib/api";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../stores/auth";
 
@@ -121,6 +121,41 @@ export function useUpdateSettings() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
 			queryClient.invalidateQueries({ queryKey: queryKeys.roles.lists() });
+		},
+	});
+}
+
+// ---- Scan hooks ----
+
+export function useLatestScan() {
+	return useQuery({
+		queryKey: queryKeys.scan.latest(),
+		queryFn: () => scanApi.getLatest(),
+		retry: false,
+		staleTime: 1000 * 30, // 30 seconds — poll-friendly
+	});
+}
+
+export function useScan(id: number | null) {
+	return useQuery({
+		queryKey: queryKeys.scan.detail(id as number),
+		queryFn: () => scanApi.get(id as number),
+		enabled: id !== null,
+		refetchInterval: (query) =>
+			query.state.data?.status === "pending" ||
+			query.state.data?.status === "running"
+				? 2000
+				: false,
+	});
+}
+
+export function useStartScan() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () => scanApi.start(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.scan.latest() });
 		},
 	});
 }

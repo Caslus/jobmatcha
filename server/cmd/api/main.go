@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/caslus/jobmatcha/internal/api"
 	"github.com/caslus/jobmatcha/internal/model"
@@ -46,7 +51,7 @@ func main() {
 		slog.Error("failed to get underlying sql.DB", "error", err)
 		os.Exit(1)
 	}
-	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxOpenConns(3)
 
 	if err := migrations.Migrate(db); err != nil {
 		slog.Error("failed to run migrations", "error", err)
@@ -95,11 +100,38 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	api.RegisterRoutes(r, repos, db)
+	schedulerSvc := api.RegisterRoutes(r, repos, db)
 
-	slog.Info("listening", "port", port, "db", dbPath)
-	if err := r.Run(":" + port); err != nil {
-		slog.Error("server error", "error", err)
-		os.Exit(1)
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	// Start server in background
+	go func() {
+		slog.Info("listening", "port", port, "db", dbPath)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("shutting down...")
+
+	// Stop the scheduler first (no new scans)
+	schedulerSvc.Stop()
+
+	// Then shut down the HTTP server with a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("server forced to shutdown", "error", err)
+	}
+
+	slog.Info("server stopped")
 }

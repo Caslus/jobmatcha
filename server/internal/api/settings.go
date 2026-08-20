@@ -2,18 +2,22 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
+	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 type SettingsHandler struct {
-	cfgRepo *repository.ConfigRepo
+	cfgRepo   *repository.ConfigRepo
+	scheduler *service.SchedulerService
 }
 
-func NewSettingsHandler(cfgRepo *repository.ConfigRepo) *SettingsHandler {
-	return &SettingsHandler{cfgRepo: cfgRepo}
+func NewSettingsHandler(cfgRepo *repository.ConfigRepo, scheduler *service.SchedulerService) *SettingsHandler {
+	return &SettingsHandler{cfgRepo: cfgRepo, scheduler: scheduler}
 }
 
 // GET /api/settings
@@ -31,6 +35,10 @@ func (h *SettingsHandler) Get(c *gin.Context) {
 		WorkTypes:        cfg.WorkTypes,
 		EmploymentType:   cfg.EmploymentType,
 		MaxDaysOld:       cfg.MaxDaysOld,
+		ScanEnabled:      cfg.ScanEnabled,
+		ScanCronExpr:     cfg.ScanCronExpr,
+		ScanTimezone:     cfg.ScanTimezone,
+		NextScanAt:       h.scheduler.NextRun(),
 	})
 }
 
@@ -61,6 +69,26 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 	if req.MaxDaysOld != nil {
 		updates["max_days_old"] = *req.MaxDaysOld
 	}
+	if req.ScanEnabled != nil {
+		updates["scan_enabled"] = *req.ScanEnabled
+	}
+	if req.ScanCronExpr != nil {
+		// Validate cron expression using the standard parser
+		parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		if _, err := parser.Parse(*req.ScanCronExpr); err != nil {
+			c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid cron expression: " + err.Error()})
+			return
+		}
+		updates["scan_cron_expr"] = *req.ScanCronExpr
+	}
+	if req.ScanTimezone != nil {
+		// Validate the timezone before persisting
+		if _, err := time.LoadLocation(*req.ScanTimezone); err != nil {
+			c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid timezone: " + err.Error()})
+			return
+		}
+		updates["scan_timezone"] = *req.ScanTimezone
+	}
 
 	if len(updates) == 0 {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "No fields to update."})
@@ -71,6 +99,9 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
+
+	// Reload the scheduler so it picks up any scan config changes
+	h.scheduler.ReloadSchedule()
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

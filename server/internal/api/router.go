@@ -7,11 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) {
+func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) *service.SchedulerService {
+	scannerSvc := service.NewScannerService(db, repos)
+	schedulerSvc := service.NewSchedulerService(repos.Config, scannerSvc)
+	schedulerSvc.Start()
+
 	auth := NewAuthHandler(repos.Config, db)
 	roles := NewRoleHandler(repos)
-	settings := NewSettingsHandler(repos.Config)
-	scan := NewScanHandler(service.NewScannerService(db, repos))
+	settings := NewSettingsHandler(repos.Config, schedulerSvc)
+	scan := NewScanHandler(scannerSvc)
 
 	// Public routes (only what's needed before auth)
 	r.GET("/api/health", func(c *gin.Context) {
@@ -35,4 +39,6 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 		protected.GET("/scan/latest", scan.GetLatest)
 		protected.GET("/scan/:id", scan.GetByID)
 	}
+
+	return schedulerSvc
 }

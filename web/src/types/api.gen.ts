@@ -44,6 +44,12 @@ export interface Config {
   oidc_provider_url: string;
   oidc_client_id: string;
   /**
+   * Scheduled scanning
+   */
+  scan_enabled: boolean;
+  scan_cron_expr: string;
+  scan_timezone: string;
+  /**
    * Relevance preferences
    */
   include_keywords: StringSlice;
@@ -212,6 +218,10 @@ export interface SettingsResponse {
   work_types: StringSlice;
   employment_type: string;
   max_days_old: number /* int */;
+  scan_enabled: boolean;
+  scan_cron_expr: string;
+  scan_timezone: string;
+  next_scan_at?: any /* time.Time */;
 }
 /**
  * SettingsUpdateRequest is the request body for PUT /api/settings.
@@ -223,4 +233,7 @@ export interface SettingsUpdateRequest {
   work_types?: StringSlice;
   employment_type?: string;
   max_days_old?: number /* int */;
+  scan_enabled?: boolean;
+  scan_cron_expr?: string;
+  scan_timezone?: string;
 }

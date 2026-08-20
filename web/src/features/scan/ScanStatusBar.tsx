@@ -1,13 +1,18 @@
-import { Settings } from "lucide-react";
+import { Clock, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDate } from "#/lib/date.ts";
 import type { ScanJobResponse } from "#/types/api.gen.ts";
+import { useSettings } from "../../hooks/useApi";
 import { scanApi } from "../../lib/api";
+import { ScanSettingsModal } from "./ScanSettingsModal";
 
 export function ScanStatusBar() {
 	const [scanJob, setScanJob] = useState<ScanJobResponse | null>(null);
 	const [scanning, setScanning] = useState(false);
-	const [showScheduled, setShowScheduled] = useState(false);
+	const [showModal, setShowModal] = useState(false);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	const { data: settings } = useSettings();
 
 	const startPolling = useCallback((scanId: number) => {
 		if (intervalRef.current) clearInterval(intervalRef.current);
@@ -26,7 +31,7 @@ export function ScanStatusBar() {
 		}, 2000);
 	}, []);
 
-	// Load latest scan on mount — resume polling if still in progress
+	// Load latest scan on mount
 	useEffect(() => {
 		scanApi
 			.getLatest()
@@ -42,10 +47,15 @@ export function ScanStatusBar() {
 			.catch(() => {});
 	}, [startPolling]);
 
+	useEffect(() => {
+		return () => {
+			if (intervalRef.current) clearInterval(intervalRef.current);
+		};
+	}, []);
+
 	const startScan = async () => {
 		try {
 			const resp = await scanApi.start();
-			console.log("Scan started:", resp);
 			setScanning(true);
 			startPolling(resp.id);
 		} catch {
@@ -53,23 +63,9 @@ export function ScanStatusBar() {
 		}
 	};
 
-	// Cleanup interval on unmount
-	useEffect(() => {
-		return () => {
-			if (intervalRef.current) clearInterval(intervalRef.current);
-		};
-	}, []);
-
 	const lastScan = scanJob;
-	const lastScanDate = lastScan?.completed_at
-		? new Date(lastScan.completed_at).toLocaleDateString("en-CA") +
-			", " +
-			new Date(lastScan.completed_at).toLocaleTimeString("en-US", {
-				hour: "2-digit",
-				minute: "2-digit",
-				second: "2-digit",
-				hour12: false,
-			})
+	const nextScanTime = settings?.next_scan_at
+		? formatDate(settings.next_scan_at)
 		: null;
 
 	return (
@@ -81,9 +77,9 @@ export function ScanStatusBar() {
 					</span>
 					<button
 						type="button"
-						onClick={() => setShowScheduled(true)}
+						onClick={() => setShowModal(true)}
 						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-						title="Scheduled scan settings"
+						title="Scan settings"
 					>
 						<Settings size={16} />
 					</button>
@@ -103,8 +99,10 @@ export function ScanStatusBar() {
 									{lastScan.duration_ms > 0 &&
 										` · ${(lastScan.duration_ms / 1000).toFixed(1)}s`}
 								</p>
-								{lastScanDate && (
-									<p className="text-[#4a5a4a]">{lastScanDate}</p>
+								{lastScan.completed_at && (
+									<p className="text-[#4a5a4a]">
+										{formatDate(lastScan.completed_at)}
+									</p>
 								)}
 							</>
 						) : lastScan.status === "failed" ? (
@@ -123,6 +121,18 @@ export function ScanStatusBar() {
 					<p className="text-xs text-[#3a4a3a]">Never scanned</p>
 				)}
 
+				{/* Scheduled indicator */}
+				{settings?.scan_enabled && (
+					<div className="flex items-center gap-1.5 text-xs text-[#7dba7a]/70">
+						<Clock size={11} />
+						<span>
+							{nextScanTime
+								? `Next scan: ${nextScanTime}`
+								: `Scheduled (${settings.scan_timezone})`}
+						</span>
+					</div>
+				)}
+
 				{/* Progress bar */}
 				{scanning && scanJob && scanJob.total_companies > 0 && (
 					<div>
@@ -139,59 +149,14 @@ export function ScanStatusBar() {
 						</p>
 					</div>
 				)}
-
-				<button
-					type="button"
-					onClick={startScan}
-					disabled={scanning}
-					className="w-full rounded-lg bg-gradient-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{scanning ? "Scanning..." : "New scan"}
-				</button>
 			</div>
 
-			{/* Scheduled Scan Modal */}
-			{showScheduled && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-					<div className="w-full max-w-sm rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-6 shadow-2xl">
-						<div className="mb-4 flex items-center justify-between">
-							<h3 className="text-sm font-semibold text-[#e8e8e8]">
-								Scheduled Scan Settings
-							</h3>
-							<button
-								type="button"
-								onClick={() => setShowScheduled(false)}
-								className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-							>
-								<svg
-									width="14"
-									height="14"
-									viewBox="0 0 14 14"
-									fill="none"
-									aria-hidden="true"
-								>
-									<path
-										d="M3 3l8 8M11 3l-8 8"
-										stroke="currentColor"
-										strokeWidth="1.5"
-										strokeLinecap="round"
-									/>
-								</svg>
-							</button>
-						</div>
-						<p className="text-xs text-[#6a7a6a]">
-							Scheduled scanning is not yet available. This will allow automatic
-							daily/weekly scans.
-						</p>
-						<button
-							type="button"
-							onClick={() => setShowScheduled(false)}
-							className="mt-4 w-full rounded-lg border border-[#2a3a2a] px-3 py-2 text-xs font-medium text-[#6a7a6a] transition hover:bg-[#1a2a1a]"
-						>
-							Close
-						</button>
-					</div>
-				</div>
+			{showModal && (
+				<ScanSettingsModal
+					onClose={() => setShowModal(false)}
+					scanning={scanning}
+					onStartScan={startScan}
+				/>
 			)}
 		</>
 	);

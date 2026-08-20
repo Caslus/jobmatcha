@@ -32,6 +32,11 @@ type Config struct {
 	OIDCClientID     string `gorm:"size:255;default:''" json:"oidc_client_id"`
 	OIDCClientSecret string `gorm:"size:255;default:''" json:"-"`
 
+	// Scheduled scanning
+	ScanEnabled  bool   `gorm:"not null;default:false" json:"scan_enabled"`
+	ScanCronExpr string `gorm:"size:50;default:''" json:"scan_cron_expr"`
+	ScanTimezone string `gorm:"size:64;default:'UTC'" json:"scan_timezone"`
+
 	// Relevance preferences
 	IncludeKeywords  StringSlice `gorm:"type:text;serializer:json" json:"include_keywords"`
 	ExcludeKeywords  StringSlice `gorm:"type:text;serializer:json" json:"exclude_keywords"`
