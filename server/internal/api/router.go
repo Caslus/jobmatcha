@@ -16,6 +16,8 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 	roles := NewRoleHandler(repos)
 	settings := NewSettingsHandler(repos.Config, schedulerSvc)
 	scan := NewScanHandler(scannerSvc)
+	aiH := NewAIHandler(repos.Config)
+	onboarding := NewOnboardingHandler(repos.Config, scannerSvc, schedulerSvc)
 
 	// Public routes (only what's needed before auth)
 	r.GET("/api/health", func(c *gin.Context) {
@@ -38,6 +40,13 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 		protected.POST("/scan", scan.Start)
 		protected.GET("/scan/latest", scan.GetLatest)
 		protected.GET("/scan/:id", scan.GetByID)
+
+		// AI & Onboarding endpoints
+		protected.POST("/ai/validate-key", aiH.ValidateKey)
+		protected.POST("/ai/parse-resume", aiH.ParseResume)
+		protected.GET("/settings/ai", aiH.GetSettings)
+		protected.PUT("/settings/ai", aiH.UpdateSettings)
+		protected.POST("/onboarding/complete", onboarding.Complete)
 	}
 
 	return schedulerSvc

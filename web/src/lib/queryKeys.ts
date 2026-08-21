@@ -18,4 +18,7 @@ export const queryKeys = {
 		latest: () => [...queryKeys.scan.all, "latest"] as const,
 		detail: (id: number) => [...queryKeys.scan.all, "detail", id] as const,
 	},
+	ai: {
+		settings: ["ai", "settings"] as const,
+	},
 };

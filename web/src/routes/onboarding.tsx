@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { X } from "lucide-react";
 import { Particles } from "#/components/ui/particles.tsx";
-import { useChangePassword } from "../hooks/useApi";
+import { OnboardingWizard } from "../features/onboarding/OnboardingWizard";
 import { useAuthStore } from "../stores/auth";
 
 export const Route = createFileRoute("/onboarding")({
@@ -16,34 +16,8 @@ export const Route = createFileRoute("/onboarding")({
 
 function OnboardingPage() {
 	const navigate = useNavigate();
-	const changePasswordMutation = useChangePassword();
-	const [current, setCurrent] = useState("");
-	const [next, setNext] = useState("");
-	const [confirm, setConfirm] = useState("");
-	const [error, setError] = useState("");
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-
-		if (next.length < 6) {
-			setError("Password must be at least 6 characters");
-			return;
-		}
-		if (next !== confirm) {
-			setError("Passwords do not match");
-			return;
-		}
-
-		changePasswordMutation.mutate(
-			{ currentPassword: current, newPassword: next },
-			{
-				onSuccess: () => navigate({ to: "/dashboard" }),
-				onError: (err) =>
-					setError((err as Error).message || "Failed to change password"),
-			},
-		);
-	};
+	const { setupComplete } = useAuthStore();
+	const isReRun = setupComplete;
 
 	return (
 		<div className="flex min-h-screen items-center justify-center">
@@ -57,78 +31,41 @@ function OnboardingPage() {
 					quantity={40}
 				/>
 			</div>
-			<div className="w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl">
+			<div
+				className="relative w-full max-w-sm rounded-2xl border border-[#1a2a1a] bg-[#0d120d] p-8 shadow-2xl animate-[cardIn_1.8s_cubic-bezier(0.16,1,0.3,1)]"
+				style={{ animationFillMode: "both" }}
+			>
+				<style>{`
+					@keyframes cardIn {
+						0% { opacity: 0; transform: scale(0.85) translateY(40px); filter: blur(6px); }
+						30% { opacity: 1; filter: blur(0); }
+						100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+					}
+					@keyframes glowDecay {
+						0% { box-shadow: 0 0 0 0 rgba(125,186,122,0); }
+						12% { box-shadow: 0 0 80px -10px rgba(125,186,122,0.12); }
+						100% { box-shadow: 0 0 0 0 rgba(125,186,122,0); }
+					}
+				`}</style>
+				<div
+					className="absolute inset-0 rounded-2xl pointer-events-none animate-[glowDecay_5s_ease-out]"
+					style={{ animationFillMode: "both" }}
+				/>
+				{isReRun && (
+					<button
+						type="button"
+						onClick={() => navigate({ to: "/dashboard" })}
+						className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#1a2a1a] text-[#6a7a6a] transition hover:bg-[#2a3a2a] hover:text-[#e8e8e8]"
+					>
+						<X size={14} />
+					</button>
+				)}
 				<div className="mb-8 text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-[#7dba7a] to-[#4a7c4f] shadow-lg shadow-[#7dba7a]/20">
 						<span className="text-2xl">🔐</span>
 					</div>
-					<h1 className="text-2xl font-bold text-[#e8e8e8]">
-						Set Your Password
-					</h1>
-					<p className="mt-1 text-sm text-[#6a7a6a]">
-						Change the default password to continue
-					</p>
 				</div>
-
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div>
-						<label
-							htmlFor="current-password"
-							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
-						>
-							Current Password
-						</label>
-						<input
-							id="current-password"
-							type="password"
-							value={current}
-							onChange={(e) => setCurrent(e.target.value)}
-							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-						/>
-					</div>
-					<div>
-						<label
-							htmlFor="new-password"
-							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
-						>
-							New Password
-						</label>
-						<input
-							id="new-password"
-							type="password"
-							value={next}
-							onChange={(e) => setNext(e.target.value)}
-							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-						/>
-					</div>
-					<div>
-						<label
-							htmlFor="confirm-password"
-							className="mb-1 block text-xs font-medium text-[#6a7a6a]"
-						>
-							Confirm New Password
-						</label>
-						<input
-							id="confirm-password"
-							type="password"
-							value={confirm}
-							onChange={(e) => setConfirm(e.target.value)}
-							className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-						/>
-					</div>
-
-					{error && <p className="text-sm text-red-400">{error}</p>}
-
-					<button
-						type="submit"
-						disabled={
-							changePasswordMutation.isPending || !current || !next || !confirm
-						}
-						className="w-full rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{changePasswordMutation.isPending ? "Setting..." : "Set Password"}
-					</button>
-				</form>
+				<OnboardingWizard />
 			</div>
 		</div>
 	);

@@ -1,8 +1,13 @@
 import ky, { type HTTPError } from "ky";
 import type {
+	AIInfoResponse,
+	AIUpdateRequest,
+	AIValidateKeyRequest,
+	AIValidateKeyResponse,
 	AuthStatusResponse,
 	AuthTokenResponse,
 	ErrorResponse,
+	ParseResumeResponse,
 	RoleDetailResponse,
 	RoleListResponse,
 	ScanJobResponse,
@@ -13,6 +18,7 @@ import type {
 const API_BASE = "http://localhost:8181/api";
 
 function getToken(): string | null {
+	if (typeof window === "undefined") return null;
 	try {
 		return localStorage.getItem("jobmatcha_token");
 	} catch {
@@ -21,6 +27,7 @@ function getToken(): string | null {
 }
 
 function setToken(token: string) {
+	if (typeof window === "undefined") return;
 	try {
 		localStorage.setItem("jobmatcha_token", token);
 	} catch {
@@ -29,6 +36,7 @@ function setToken(token: string) {
 }
 
 function clearToken() {
+	if (typeof window === "undefined") return;
 	try {
 		localStorage.removeItem("jobmatcha_token");
 	} catch {
@@ -38,7 +46,6 @@ function clearToken() {
 
 export const api = ky.create({
 	prefix: API_BASE,
-	headers: { "Content-Type": "application/json" },
 	hooks: {
 		beforeRequest: [
 			({ request }) => {
@@ -116,4 +123,26 @@ export const scanApi = {
 	start: () => api.post("scan").json<ScanJobResponse>(),
 	get: (id: number) => api.get(`scan/${id}`).json<ScanJobResponse>(),
 	getLatest: () => api.get("scan/latest").json<ScanJobResponse>(),
+};
+
+// AI
+export const aiApi = {
+	validateKey: (data: AIValidateKeyRequest) =>
+		api.post("ai/validate-key", { json: data }).json<AIValidateKeyResponse>(),
+	getSettings: () => api.get("settings/ai").json<AIInfoResponse>(),
+	updateSettings: (data: AIUpdateRequest) =>
+		api.put("settings/ai", { json: data }).json(),
+	parseResume: (file: File) => {
+		const form = new FormData();
+		form.append("file", file);
+		return api
+			.post("ai/parse-resume", { body: form })
+			.json<ParseResumeResponse>();
+	},
+};
+
+// Onboarding
+export const onboardingApi = {
+	complete: (data: Record<string, unknown>) =>
+		api.post("onboarding/complete", { json: data }).json(),
 };

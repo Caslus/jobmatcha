@@ -187,7 +187,7 @@ func TestSettingsAPI(t *testing.T) {
 
 		var resp model.ErrorResponse
 		parseJSON(t, w.Body.String(), &resp)
-		if resp.Error != "no fields to update" {
+		if resp.Error != "No fields to update." {
 			t.Errorf("expected 'no fields to update', got '%s'", resp.Error)
 		}
 	})

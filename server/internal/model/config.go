@@ -32,6 +32,18 @@ type Config struct {
 	OIDCClientID     string `gorm:"size:255;default:''" json:"oidc_client_id"`
 	OIDCClientSecret string `gorm:"size:255;default:''" json:"-"`
 
+	// AI Provider
+	AIProvider string `gorm:"size:50;default:''" json:"ai_provider"`
+	AIApiKey   string `gorm:"size:512;default:''" json:"-"` // never exposed to frontend
+	AIEnabled  bool   `gorm:"not null;default:false" json:"ai_enabled"`
+
+	// User Profile (extracted from resume or entered manually)
+	UserName     string `gorm:"size:255;default:''" json:"user_name"`
+	UserEmail    string `gorm:"size:255;default:''" json:"user_email"`
+	UserLocation string `gorm:"size:255;default:''" json:"user_location"`
+	UserLinkedin string `gorm:"size:512;default:''" json:"user_linkedin"`
+	UserGithub   string `gorm:"size:512;default:''" json:"user_github"`
+
 	// Scheduled scanning
 	ScanEnabled  bool   `gorm:"not null;default:false" json:"scan_enabled"`
 	ScanCronExpr string `gorm:"size:50;default:''" json:"scan_cron_expr"`

@@ -1,51 +1,12 @@
-import { Play, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { formatDate } from "#/lib/date.ts";
+import { ScanScheduleFields } from "@/components/scan-settings/ScanScheduleFields";
 import { useSettings, useUpdateSettings } from "../../hooks/useApi";
 
 interface Props {
 	onClose: () => void;
 	scanning: boolean;
 	onStartScan: () => void;
-}
-
-function ResetBtn({ title, onClick }: { title: string; onClick: () => void }) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className="absolute right-2 top-1/2 -translate-y-1/2 text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-			title={title}
-		>
-			<X size={12} />
-		</button>
-	);
-}
-
-function ToggleSwitch({
-	checked,
-	onChange,
-}: {
-	checked: boolean;
-	onChange: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			role="switch"
-			aria-checked={checked}
-			onClick={onChange}
-			className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-				checked ? "bg-[#7dba7a]" : "bg-[#2a3a2a]"
-			}`}
-		>
-			<span
-				className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-					checked ? "translate-x-4.5" : "translate-x-0.75"
-				}`}
-			/>
-		</button>
-	);
 }
 
 export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
@@ -95,12 +56,6 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 		);
 	};
 
-	const set =
-		(fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-			fn(e.target.value);
-			setSaveError(null);
-		};
-
 	const dialogRef = useRef<HTMLDialogElement>(null);
 
 	useEffect(() => {
@@ -142,7 +97,20 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 						onClick={onClose}
 						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
 					>
-						<X size={14} />
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 14 14"
+							fill="none"
+							aria-hidden="true"
+						>
+							<path
+								d="M1 1l12 12M13 1L1 13"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+							/>
+						</svg>
 					</button>
 				</div>
 
@@ -157,112 +125,35 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 						disabled={scanning}
 						className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						<Play size={14} className={scanning ? "hidden" : ""} />
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 14 14"
+							fill="none"
+							aria-hidden="true"
+							className={scanning ? "hidden" : ""}
+						>
+							<path d="M3 1l10 6-10 6V1z" fill="currentColor" />
+						</svg>
 						{scanning ? "Scanning..." : "Run Manual Scan"}
 					</button>
 
 					<hr className="border-[#1a2a1a]" />
 
-					{/* Toggle */}
-					<label
-						htmlFor="toggle"
-						className="flex items-center justify-between cursor-pointer"
-					>
-						<span className="text-xs font-medium text-[#e8e8e8]">
-							Enable scheduled scanning
-						</span>
-						<ToggleSwitch
-							checked={draftEnabled}
-							onChange={() => {
-								setSaveError(null);
-								setDraftEnabled(!draftEnabled);
-							}}
-						/>
-					</label>
-
-					{/* Cron expression */}
-					<div>
-						<label
-							htmlFor="cron-expr"
-							className="mb-1.5 block text-xs font-medium text-[#6a7a6a]"
-						>
-							Cron expression
-						</label>
-						<div className="relative">
-							<input
-								id="cron-expr"
-								type="text"
-								value={draftCron}
-								onChange={set(setDraftCron)}
-								placeholder="0 */6 * * *"
-								className="w-full rounded-lg border border-[#2a3a2a] bg-[#080b08] px-3 py-2 pr-8 text-xs text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[rgba(125,186,122,0.3)]"
-							/>
-							{draftCron !== savedCron && (
-								<ResetBtn
-									title="Reset to saved value"
-									onClick={() => {
-										setDraftCron(savedCron);
-										setSaveError(null);
-									}}
-								/>
-							)}
-						</div>
-						<p className="mt-1 text-[10px] text-[#4a5a4a]">
-							Format: minute hour day month weekday.{" "}
-							<a
-								href={
-									"https://crontab.guru/#" +
-									encodeURIComponent(draftCron.replace(/\s+/g, "_"))
-								}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline hover:text-[#6a7a6a]"
-							>
-								crontab.guru
-							</a>
-						</p>
-					</div>
-
-					{/* Timezone */}
-					<div>
-						<label
-							htmlFor="tz"
-							className="mb-1.5 block text-xs font-medium text-[#6a7a6a]"
-						>
-							Timezone
-						</label>
-						<div className="relative">
-							<input
-								id="tz"
-								type="text"
-								value={draftTimezone}
-								onChange={set(setDraftTimezone)}
-								placeholder="UTC"
-								className="w-full rounded-lg border border-[#2a3a2a] bg-[#080b08] px-3 py-2 pr-8 text-xs text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[rgba(125,186,122,0.3)]"
-							/>
-							{draftTimezone !== savedTimezone && (
-								<ResetBtn
-									title="Reset to saved value"
-									onClick={() => {
-										setDraftTimezone(savedTimezone || browserTz.current);
-										setSaveError(null);
-									}}
-								/>
-							)}
-						</div>
-						<p className="mt-1 text-[10px] text-[#4a5a4a]">
-							<a
-								href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline hover:text-[#6a7a6a]"
-							>
-								IANA timezone name.
-							</a>{" "}
-							Detected:{" "}
-							<span className="text-[#6a7a6a]">{browserTz.current}</span>
-						</p>
-					</div>
+					<ScanScheduleFields
+						value={{
+							scan_enabled: draftEnabled,
+							scan_cron_expr: draftCron,
+							scan_timezone: draftTimezone,
+						}}
+						onChange={(v) => {
+							setDraftEnabled(v.scan_enabled);
+							setDraftCron(v.scan_cron_expr);
+							setDraftTimezone(v.scan_timezone);
+							setSaveError(null);
+						}}
+						showInfo={false}
+					/>
 
 					{/* Next run preview */}
 					{draftEnabled && (
@@ -289,14 +180,6 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 								</p>
 							) : null}
 						</div>
-					)}
-
-					{/* Info text */}
-					{!draftEnabled && (
-						<p className="text-[10px] text-[#4a5a4a] leading-relaxed">
-							When enabled, the scanner will run automatically on the schedule
-							defined by your cron expression.
-						</p>
 					)}
 
 					{/* Error */}

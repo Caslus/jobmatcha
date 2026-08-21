@@ -124,8 +124,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	}
 
 	if err := h.cfgRepo.UpdateMap(map[string]interface{}{
-		"password_hash":  string(hash),
-		"setup_complete": true,
+		"password_hash": string(hash),
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return

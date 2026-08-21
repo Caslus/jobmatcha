@@ -10,6 +10,7 @@ interface AuthState {
 }
 
 function hasToken(): boolean {
+	if (typeof window === "undefined") return false;
 	try {
 		return !!localStorage.getItem("jobmatcha_token");
 	} catch {
@@ -18,6 +19,7 @@ function hasToken(): boolean {
 }
 
 function clearToken() {
+	if (typeof window === "undefined") return;
 	try {
 		localStorage.removeItem("jobmatcha_token");
 	} catch {

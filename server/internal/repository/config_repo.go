@@ -72,6 +72,9 @@ func normalizeConfig(cfg *model.Config) {
 	if cfg.ScanTimezone == "" {
 		cfg.ScanTimezone = "UTC"
 	}
+	if cfg.AIProvider == "" {
+		cfg.AIProvider = "openrouter"
+	}
 }
 
 func (r *ConfigRepo) UpdateMap(updates map[string]interface{}) error {

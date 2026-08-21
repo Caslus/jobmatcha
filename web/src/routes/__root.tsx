@@ -51,7 +51,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 			{
 				property: "og:url",
-				content: window.location.href,
+				content: "https://jobmatcha.app",
 			},
 		],
 		links: [

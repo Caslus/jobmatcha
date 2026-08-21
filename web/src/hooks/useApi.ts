@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { authApi, rolesApi, scanApi, settingsApi } from "../lib/api";
+import {
+	aiApi,
+	authApi,
+	onboardingApi,
+	rolesApi,
+	scanApi,
+	settingsApi,
+} from "../lib/api";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../stores/auth";
 
@@ -156,6 +163,53 @@ export function useStartScan() {
 		mutationFn: () => scanApi.start(),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.scan.latest() });
+		},
+	});
+}
+
+// ---- AI hooks ----
+
+export function useAISettings() {
+	return useQuery({
+		queryKey: queryKeys.ai.settings,
+		queryFn: () => aiApi.getSettings(),
+		staleTime: 1000 * 60 * 5,
+	});
+}
+
+export function useUpdateAISettings() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (data: Parameters<typeof aiApi.updateSettings>[0]) =>
+			aiApi.updateSettings(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.ai.settings });
+		},
+	});
+}
+
+export function useValidateKey() {
+	return useMutation({
+		mutationFn: (data: Parameters<typeof aiApi.validateKey>[0]) =>
+			aiApi.validateKey(data),
+	});
+}
+
+export function useParseResume() {
+	return useMutation({
+		mutationFn: (file: File) => aiApi.parseResume(file),
+	});
+}
+
+// ---- Onboarding hooks ----
+
+export function useCompleteOnboarding() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (data: Record<string, unknown>) => onboardingApi.complete(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.auth.status });
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
 		},
 	});
 }
