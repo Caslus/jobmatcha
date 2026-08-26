@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cache/mise
+            ~/.local/share/mise
+            ~/.cache/pnpm
+          key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml') }}
+      - run: corepack enable
+      - run: pnpm --dir web install --frozen-lockfile
+      - run: mise run "Run Go coverage"
+      - run: mise run "Check Vite web app"
+      - run: mise run "Typecheck Vite web app"
+      - run: mise run "Run Vite web coverage"
+      - run: mise run "Build Vite web app"
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: coverage
+          path: |
+            server/coverage.out
+            server/coverage.html
+            web/coverage
+          retention-days: 14
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - run: corepack enable
+      - run: pnpm --dir web install --frozen-lockfile
+      - run: pnpm --dir web exec playwright install --with-deps chromium
+      - run: mise run "Run browser E2E tests"
+      - if: failure()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7
