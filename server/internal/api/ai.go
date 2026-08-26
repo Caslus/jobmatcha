@@ -8,19 +8,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/caslus/jobmatcha/internal/ai"
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
+	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/ledongthuc/pdf"
 )
 
 type AIHandler struct {
-	cfgRepo *repository.ConfigRepo
+	cfgRepo  *repository.ConfigRepo
+	aiClient service.AIClient
 }
 
-func NewAIHandler(cfgRepo *repository.ConfigRepo) *AIHandler {
-	return &AIHandler{cfgRepo: cfgRepo}
+func NewAIHandler(cfgRepo *repository.ConfigRepo, aiClient service.AIClient) *AIHandler {
+	return &AIHandler{cfgRepo: cfgRepo, aiClient: aiClient}
 }
 
 // POST /api/ai/validate-key
@@ -35,7 +36,7 @@ func (h *AIHandler) ValidateKey(c *gin.Context) {
 		return
 	}
 
-	valid, count, err := ai.ValidateKey(c.Request.Context(), req.APIKey)
+	valid, count, err := h.aiClient.ValidateKey(c.Request.Context(), req.APIKey)
 	if err != nil {
 		slog.Warn("ai key validation failed", "error", err)
 		c.JSON(http.StatusOK, model.AIValidateKeyResponse{

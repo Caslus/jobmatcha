@@ -12,11 +12,11 @@ import (
 
 type OnboardingHandler struct {
 	cfgRepo      *repository.ConfigRepo
-	scanSvc      *service.ScannerService
-	schedulerSvc *service.SchedulerService
+	scanSvc      service.Scanner
+	schedulerSvc service.Scheduler
 }
 
-func NewOnboardingHandler(cfgRepo *repository.ConfigRepo, scanSvc *service.ScannerService, schedulerSvc *service.SchedulerService) *OnboardingHandler {
+func NewOnboardingHandler(cfgRepo *repository.ConfigRepo, scanSvc service.Scanner, schedulerSvc service.Scheduler) *OnboardingHandler {
 	return &OnboardingHandler{cfgRepo: cfgRepo, scanSvc: scanSvc, schedulerSvc: schedulerSvc}
 }
 

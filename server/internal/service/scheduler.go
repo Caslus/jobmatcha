@@ -17,15 +17,24 @@ type SchedulerService struct {
 	mu        sync.Mutex
 	scheduler gocron.Scheduler
 	cfgRepo   *repository.ConfigRepo
-	scanner   *ScannerService
+	scanner   Scanner
 	jobID     gocron.Job
 	started   bool
 	tzString  string
 }
 
+// Scheduler is the lifecycle boundary owned by the application.
+type Scheduler interface {
+	Start()
+	Stop()
+	ReloadSchedule()
+	IsEnabled() bool
+	NextRun() *time.Time
+}
+
 // NewSchedulerService creates a scheduler service backed by gocron.
 // The scheduler is not started; call Start() to begin.
-func NewSchedulerService(cfgRepo *repository.ConfigRepo, scanner *ScannerService) *SchedulerService {
+func NewSchedulerService(cfgRepo *repository.ConfigRepo, scanner Scanner) *SchedulerService {
 	return &SchedulerService{
 		cfgRepo: cfgRepo,
 		scanner: scanner,

@@ -51,10 +51,17 @@ func setupTestRouter(t *testing.T, db *gorm.DB, secure bool) (*gin.Engine, strin
 		t.Fatalf("bootstrap auth: %v", err)
 	}
 	r := gin.New()
+	scanner := service.NewScannerService(db, repos)
 	if secure {
 		r.GET("/cookie", func(c *gin.Context) { setSessionCookie(c, "test", true) })
 	}
-	RegisterRoutes(r, repos, db, authSvc)
+	RegisterRoutes(r, repos, RouteDependencies{
+		Auth:         authSvc,
+		Scanner:      scanner,
+		Scheduler:    service.NewSchedulerService(repos.Config, scanner),
+		AI:           service.NewAIClient(),
+		CookieSecure: secure,
+	})
 	return r, secretFile
 }
 

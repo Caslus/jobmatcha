@@ -20,13 +20,19 @@ type ResumeService struct {
 	resumeRepo *repository.ResumeRepo
 	roleRepo   *repository.RoleRepo
 	cfgRepo    *repository.ConfigRepo
+	aiClient   AIClient
 }
 
 func NewResumeService(repos *repository.Repositories) *ResumeService {
+	return NewResumeServiceWithAI(repos, NewAIClient())
+}
+
+func NewResumeServiceWithAI(repos *repository.Repositories, aiClient AIClient) *ResumeService {
 	return &ResumeService{
 		resumeRepo: repos.Resume,
 		roleRepo:   repos.Role,
 		cfgRepo:    repos.Config,
+		aiClient:   aiClient,
 	}
 }
 
@@ -50,7 +56,7 @@ func (s *ResumeService) Parse(ctx context.Context, resume *model.Resume) (*ai.Pa
 		return nil, ErrAIKeyNotConfigured
 	}
 
-	result, err := ai.ParseResume(ctx, cfg.AIApiKey, resume.Content)
+	result, err := s.aiClient.ParseResume(ctx, cfg.AIApiKey, resume.Content)
 	if err != nil {
 		return nil, fmt.Errorf("parsing resume %d: %w", resume.ID, err)
 	}
@@ -91,7 +97,7 @@ func (s *ResumeService) Tailor(ctx context.Context, roleID uint) (*model.Tailore
 			return nil, fmt.Errorf("structuring resume before tailoring: %w", err)
 		}
 	}
-	document, err := ai.TailorResume(ctx, cfg.AIApiKey, resume.Document, role.Title, role.Company.Name, role.Location, role.Description)
+	document, err := s.aiClient.TailorResume(ctx, cfg.AIApiKey, resume.Document, role.Title, role.Company.Name, role.Location, role.Description)
 	if err != nil {
 		return nil, fmt.Errorf("tailoring resume for role %d: %w", roleID, err)
 	}

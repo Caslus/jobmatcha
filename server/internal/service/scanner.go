@@ -111,15 +111,15 @@ func resultsToDTO(results []scanner.ScanResult) []model.ScanResult {
 
 func jobToResponse(job *model.ScanJob) *model.ScanJobResponse {
 	resp := &model.ScanJobResponse{
-		ID:                job.ID,
-		Status:            job.Status,
-		Error:             job.Error,
-		DurationMS:        job.DurationMS,
-		TotalCompanies:    job.TotalCompanies,
+		ID:                 job.ID,
+		Status:             job.Status,
+		Error:              job.Error,
+		DurationMS:         job.DurationMS,
+		TotalCompanies:     job.TotalCompanies,
 		CompletedCompanies: job.CompletedCompanies,
-		StartedAt:         job.StartedAt,
-		CompletedAt:       job.CompletedAt,
-		CreatedAt:         job.CreatedAt,
+		StartedAt:          job.StartedAt,
+		CompletedAt:        job.CompletedAt,
+		CreatedAt:          job.CreatedAt,
 	}
 
 	if job.Results != "" {
@@ -134,4 +134,12 @@ func jobToResponse(job *model.ScanJob) *model.ScanJobResponse {
 	}
 
 	return resp
+}
+
+// Scanner is the application boundary for starting and inspecting ATS scans.
+// It lets application fixtures suppress external provider work.
+type Scanner interface {
+	StartScan() (uint, error)
+	GetJob(uint) (*model.ScanJobResponse, error)
+	GetLatestJob() (*model.ScanJobResponse, error)
 }

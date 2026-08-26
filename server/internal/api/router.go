@@ -1,25 +1,32 @@
 package api
 
 import (
-	"os"
-
 	"github.com/caslus/jobmatcha/internal/repository"
 	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB, authSvc *service.AuthService) *service.SchedulerService {
-	scannerSvc := service.NewScannerService(db, repos)
-	schedulerSvc := service.NewSchedulerService(repos.Config, scannerSvc)
-	schedulerSvc.Start()
+type RouteDependencies struct {
+	Auth         *service.AuthService
+	Scanner      service.Scanner
+	Scheduler    service.Scheduler
+	AI           service.AIClient
+	CookieSecure bool
+}
 
-	auth := NewAuthHandler(authSvc, CookieSecureFromEnv(os.Getenv("COOKIE_SECURE")))
+// RegisterRoutes only binds routes. Background work is owned by the
+// application constructor, rather than being started as a routing side effect.
+func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, deps RouteDependencies) {
+	authSvc := deps.Auth
+	scannerSvc := deps.Scanner
+	schedulerSvc := deps.Scheduler
+
+	auth := NewAuthHandler(authSvc, deps.CookieSecure)
 	roles := NewRoleHandler(repos)
 	settings := NewSettingsHandler(repos.Config, schedulerSvc)
 	scan := NewScanHandler(scannerSvc)
-	aiH := NewAIHandler(repos.Config)
-	resumeH := NewResumeHandler(repos)
+	aiH := NewAIHandler(repos.Config, deps.AI)
+	resumeH := NewResumeHandler(repos, deps.AI)
 	onboarding := NewOnboardingHandler(repos.Config, scannerSvc, schedulerSvc)
 
 	// Public routes (only what's needed before auth)
@@ -54,5 +61,4 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB, 
 		protected.POST("/onboarding/complete", onboarding.Complete)
 	}
 
-	return schedulerSvc
 }
