@@ -4,6 +4,7 @@ server/data/
 server/*.exe
 server/*.test
 server/*.out
+server/tmp/
 
 # -- Frontend --
 web/node_modules/

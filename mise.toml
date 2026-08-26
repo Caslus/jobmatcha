@@ -1,4 +1,5 @@
 [tools]
+air = "1.67.4"
 go = "1.26.6"
 node = "26.7.0"
 
@@ -10,6 +11,6 @@ DB_PATH = "data/app.db"
 [tasks]
 "Generate TypeScript DTOs" = { run = "cd server && tygo generate" }
 "Build Go backend" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
-"Run Go backend" = { run = "cd server && go run cmd/api/main.go" }
+"Run Go backend" = { run = "cd server && air" }
 "Run Go backend tests" = { run = "cd server && go test ./internal/api/ -v -count=1"}
 "Run Vite web app" = { run = "cd web && pnpm run dev" }
