@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ParseResumeResponse } from "@/types/api.gen";
 import {
 	useAISettings,
@@ -66,7 +66,14 @@ export function OnboardingWizard() {
 	const { data: savedAiSettings, isLoading: aiLoading } = useAISettings();
 	const { data: authStatus } = useAuthStatus();
 
-	const isFirstRun = !authStatus?.setup_complete;
+	// Completing onboarding invalidates the auth-status query. Keep the step set
+	// stable until this wizard unmounts, otherwise the final first-run step can
+	// disappear while it is still being rendered.
+	const initialSetupComplete = useRef<boolean | null>(null);
+	if (authStatus && initialSetupComplete.current === null) {
+		initialSetupComplete.current = authStatus.setup_complete;
+	}
+	const isFirstRun = !(initialSetupComplete.current ?? false);
 	const steps = isFirstRun ? STEPS_FIRST_RUN : STEPS_RE_RUN;
 
 	const [step, setStep] = useState(0);
