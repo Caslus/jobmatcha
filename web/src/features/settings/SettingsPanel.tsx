@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle, Settings as SettingsIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import type { AIUpdateRequest } from "@/types/api.gen";
 import {
 	useAISettings,
 	useChangePassword,
@@ -54,7 +55,7 @@ function AITab() {
 	};
 
 	const handleSave = () => {
-		const payload: Record<string, unknown> = { enabled };
+		const payload: AIUpdateRequest = { enabled };
 		if (valid && apiKey.trim()) {
 			payload.api_key = apiKey;
 			payload.provider = provider;

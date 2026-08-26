@@ -1,11 +1,11 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Header from "#/components/Header.tsx";
 import { RoleDetailPanel } from "../features/jobs/RoleDetailPanel";
 import { RoleList } from "../features/jobs/RoleList";
 import { PreferencesPanel } from "../features/preferences";
-import { useAuthStore } from "../stores/auth";
+import { authStatusQueryOptions } from "../hooks/useApi";
 
 // ── Resizable Panel Layout ─────────────────────────
 
@@ -103,9 +103,12 @@ function CollapseButton({
 // ── Route Definition ───────────────────────────────
 
 export const Route = createFileRoute("/dashboard")({
-	beforeLoad: () => {
-		const { authenticated } = useAuthStore.getState();
-		if (!authenticated) throw redirect({ to: "/" });
+	beforeLoad: async ({ context }) => {
+		const status = await context.queryClient.ensureQueryData(
+			authStatusQueryOptions(),
+		);
+		if (!status.authenticated) throw redirect({ to: "/" });
+		if (!status.setup_complete) throw redirect({ to: "/onboarding" });
 	},
 	component: DashboardPage,
 });
@@ -113,8 +116,6 @@ export const Route = createFileRoute("/dashboard")({
 // ── Dashboard Page ─────────────────────────────────
 
 function DashboardPage() {
-	const navigate = useNavigate();
-	const { check } = useAuthStore();
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const init = loadState();
@@ -123,13 +124,6 @@ function DashboardPage() {
 	const [collapsedLeft, setCollapsedLeft] = useState(init.collapsedLeft);
 	const [collapsedRight, setCollapsedRight] = useState(init.collapsedRight);
 	const dragging = useRef<"left" | "right" | null>(null);
-
-	useEffect(() => {
-		check().then(() => {
-			const { setupComplete } = useAuthStore.getState();
-			if (!setupComplete) navigate({ to: "/onboarding" });
-		});
-	}, [check, navigate]);
 
 	const onMouseDown = useCallback(
 		(side: "left" | "right") => (e: React.MouseEvent) => {

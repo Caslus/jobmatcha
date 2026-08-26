@@ -1,14 +1,19 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
 import { Particles } from "#/components/ui/particles.tsx";
 import wordmark from "@/assets/wordmark.svg";
-import { useLogin } from "../hooks/useApi";
-import { useAuthStore } from "../stores/auth";
+import {
+	authStatusQueryOptions,
+	useAuthStatus,
+	useLogin,
+} from "../hooks/useApi";
 
 export const Route = createFileRoute("/")({
-	beforeLoad: () => {
-		const { authenticated } = useAuthStore.getState();
-		if (authenticated) {
+	beforeLoad: async ({ context }) => {
+		const status = await context.queryClient.ensureQueryData(
+			authStatusQueryOptions(),
+		);
+		if (status.authenticated) {
 			throw redirect({ to: "/dashboard" });
 		}
 	},
@@ -16,21 +21,11 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginPage() {
-	const navigate = useNavigate();
 	const [password, setPassword] = useState("");
-	const { authenticated, loading, check } = useAuthStore();
+	const { data: status, isLoading } = useAuthStatus();
 	const loginMutation = useLogin();
 
-	useEffect(() => {
-		check().then(() => {
-			const state = useAuthStore.getState();
-			if (state.authenticated) {
-				navigate({ to: "/dashboard" });
-			}
-		});
-	}, [check, navigate]);
-
-	if (loading) {
+	if (isLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7dba7a] border-t-transparent" />
@@ -38,7 +33,7 @@ function LoginPage() {
 		);
 	}
 
-	if (authenticated) {
+	if (status?.authenticated) {
 		return null;
 	}
 

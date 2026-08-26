@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	queryOptions,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { AIInfoResponse } from "@/types/api.gen";
 import {
@@ -10,30 +15,29 @@ import {
 	settingsApi,
 } from "../lib/api";
 import { queryKeys } from "../lib/queryKeys";
-import { useAuthStore } from "../stores/auth";
 
-// ---- Auth hooks ----
-
-export function useAuthStatus() {
-	return useQuery({
+export const authStatusQueryOptions = () =>
+	queryOptions({
 		queryKey: queryKeys.auth.status,
 		queryFn: () => authApi.status(),
 		retry: false,
 		staleTime: 1000 * 60 * 5,
 	});
+
+// ---- Auth hooks ----
+
+export function useAuthStatus() {
+	return useQuery(authStatusQueryOptions());
 }
 
 export function useLogin() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const { check } = useAuthStore();
 
 	return useMutation({
 		mutationFn: (password: string) => authApi.login(password),
 		onSuccess: async () => {
-			queryClient.invalidateQueries({ queryKey: queryKeys.auth.status });
-			await check();
-			// Navigate regardless of check() result — the token is set
+			await queryClient.invalidateQueries({ queryKey: queryKeys.auth.status });
 			navigate({ to: "/dashboard" });
 		},
 	});
@@ -42,12 +46,10 @@ export function useLogin() {
 export function useLogout() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const { logout } = useAuthStore();
 
 	return useMutation({
 		mutationFn: () => authApi.logout(),
 		onSuccess: () => {
-			logout();
 			queryClient.invalidateQueries({ queryKey: queryKeys.auth.status });
 			navigate({ to: "/" });
 		},
@@ -247,7 +249,8 @@ export function useParseResume() {
 export function useCompleteOnboarding() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: Record<string, unknown>) => onboardingApi.complete(data),
+		mutationFn: (data: Parameters<typeof onboardingApi.complete>[0]) =>
+			onboardingApi.complete(data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.auth.status });
 			queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });

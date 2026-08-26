@@ -1,22 +1,12 @@
 import { LogOut, Settings } from "lucide-react";
 import { useState } from "react";
-import { authApi } from "#/lib/api.ts";
-import { useAuthStore } from "#/stores/auth.ts";
+import { useLogout } from "#/hooks/useApi.ts";
 import wordmark from "@/assets/wordmark.svg";
 import { SettingsPanel } from "@/features/settings/SettingsPanel.tsx";
 
 export default function Header() {
 	const [showSettings, setShowSettings] = useState(false);
-
-	const handleLogout = async () => {
-		try {
-			await authApi.logout();
-		} catch {
-			/* ignore */
-		}
-		useAuthStore.getState().logout();
-		window.location.href = "/";
-	};
+	const logout = useLogout();
 
 	return (
 		<>
@@ -40,7 +30,7 @@ export default function Header() {
 					</button>
 					<button
 						type="button"
-						onClick={handleLogout}
+						onClick={() => logout.mutate()}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
 					>
 						<LogOut size={14} /> Logout

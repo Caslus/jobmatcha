@@ -1,69 +1,24 @@
 import { Clock, Settings } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { formatDate } from "#/lib/date.ts";
-import type { ScanJobResponse } from "#/types/api.gen.ts";
-import { useSettings } from "../../hooks/useApi";
-import { scanApi } from "../../lib/api";
+import {
+	useLatestScan,
+	useScan,
+	useSettings,
+	useStartScan,
+} from "../../hooks/useApi";
 import { ScanSettingsModal } from "./ScanSettingsModal";
 
 export function ScanStatusBar() {
-	const [scanJob, setScanJob] = useState<ScanJobResponse | null>(null);
-	const [scanning, setScanning] = useState(false);
 	const [showModal, setShowModal] = useState(false);
-	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
 	const { data: settings } = useSettings();
-
-	const startPolling = useCallback((scanId: number) => {
-		if (intervalRef.current) clearInterval(intervalRef.current);
-		intervalRef.current = setInterval(async () => {
-			try {
-				const job = await scanApi.get(scanId);
-				setScanJob(job);
-				if (job.status === "completed" || job.status === "failed") {
-					setScanning(false);
-					if (intervalRef.current) clearInterval(intervalRef.current);
-				}
-			} catch {
-				setScanning(false);
-				if (intervalRef.current) clearInterval(intervalRef.current);
-			}
-		}, 2000);
-	}, []);
-
-	// Load latest scan on mount
-	useEffect(() => {
-		scanApi
-			.getLatest()
-			.then((job) => {
-				if (job) {
-					setScanJob(job);
-					if (job.status === "pending" || job.status === "running") {
-						setScanning(true);
-						startPolling(job.id);
-					}
-				}
-			})
-			.catch(() => {});
-	}, [startPolling]);
-
-	useEffect(() => {
-		return () => {
-			if (intervalRef.current) clearInterval(intervalRef.current);
-		};
-	}, []);
-
-	const startScan = async () => {
-		try {
-			const resp = await scanApi.start();
-			setScanning(true);
-			startPolling(resp.id);
-		} catch {
-			setScanning(false);
-		}
-	};
-
-	const lastScan = scanJob;
+	const latestScan = useLatestScan();
+	const startedScan = useStartScan();
+	const scan = useScan(startedScan.data?.id ?? latestScan.data?.id ?? null);
+	const lastScan = scan.data ?? latestScan.data;
+	const scanning =
+		lastScan?.status === "pending" || lastScan?.status === "running";
+	const startScan = () => startedScan.mutate();
 	const nextScanTime = settings?.next_scan_at
 		? formatDate(settings.next_scan_at)
 		: null;
@@ -134,18 +89,19 @@ export function ScanStatusBar() {
 				)}
 
 				{/* Progress bar */}
-				{scanning && scanJob && scanJob.total_companies > 0 && (
+				{scanning && lastScan && lastScan.total_companies > 0 && (
 					<div>
 						<div className="h-1.5 rounded-full bg-[#1a2a1a] overflow-hidden">
 							<div
 								className="h-full rounded-full bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] transition-all duration-500"
 								style={{
-									width: `${Math.round((scanJob.completed_companies / scanJob.total_companies) * 100)}%`,
+									width: `${Math.round((lastScan.completed_companies / lastScan.total_companies) * 100)}%`,
 								}}
 							/>
 						</div>
 						<p className="mt-1 text-xs text-[#4a5a4a] text-right">
-							{scanJob.completed_companies}/{scanJob.total_companies} companies
+							{lastScan.completed_companies}/{lastScan.total_companies}{" "}
+							companies
 						</p>
 					</div>
 				)}

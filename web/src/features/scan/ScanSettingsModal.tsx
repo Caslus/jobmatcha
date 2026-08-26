@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { formatDate } from "#/lib/date.ts";
 import { ScanScheduleFields } from "@/components/scan-settings/ScanScheduleFields";
 import { Modal } from "@/components/ui/modal";
+import type { SettingsUpdateRequest } from "@/types/api.gen";
 import { useSettings, useUpdateSettings } from "../../hooks/useApi";
 
 interface Props {
@@ -37,24 +38,21 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 		draftCron.trim().length > 0 && (draftEnabled !== savedEnabled || cronDirty);
 
 	const handleSave = () => {
-		const payload: Record<string, unknown> = {
+		const payload: SettingsUpdateRequest = {
 			scan_enabled: draftEnabled,
 			scan_cron_expr: draftCron,
 		};
 		if (draftTimezone !== savedTimezone) {
 			payload.scan_timezone = draftTimezone;
 		}
-		updateSettings.mutate(
-			payload as Parameters<typeof updateSettings.mutate>[0],
-			{
-				onSuccess: () => onClose(),
-				onError: (err) => {
-					setSaveError(
-						err instanceof Error ? err.message : "Failed to save settings",
-					);
-				},
+		updateSettings.mutate(payload, {
+			onSuccess: () => onClose(),
+			onError: (err) => {
+				setSaveError(
+					err instanceof Error ? err.message : "Failed to save settings",
+				);
 			},
-		);
+		});
 	};
 
 	return (

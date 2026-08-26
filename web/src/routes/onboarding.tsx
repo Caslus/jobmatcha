@@ -2,12 +2,14 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { Particles } from "#/components/ui/particles.tsx";
 import { OnboardingWizard } from "../features/onboarding/OnboardingWizard";
-import { useAuthStore } from "../stores/auth";
+import { authStatusQueryOptions, useAuthStatus } from "../hooks/useApi";
 
 export const Route = createFileRoute("/onboarding")({
-	beforeLoad: () => {
-		const { authenticated } = useAuthStore.getState();
-		if (!authenticated) {
+	beforeLoad: async ({ context }) => {
+		const status = await context.queryClient.ensureQueryData(
+			authStatusQueryOptions(),
+		);
+		if (!status.authenticated) {
 			throw redirect({ to: "/" });
 		}
 	},
@@ -16,8 +18,8 @@ export const Route = createFileRoute("/onboarding")({
 
 function OnboardingPage() {
 	const navigate = useNavigate();
-	const { setupComplete } = useAuthStore();
-	const isReRun = setupComplete;
+	const { data: status } = useAuthStatus();
+	const isReRun = status?.setup_complete ?? false;
 
 	return (
 		<div className="flex min-h-screen items-center justify-center">

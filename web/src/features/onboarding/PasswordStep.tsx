@@ -31,7 +31,7 @@ export function PasswordStep({
 					htmlFor="pw-current"
 					className="mb-1 block text-xs font-medium text-[#6a7a6a]"
 				>
-					Current Password
+					Bootstrap Password
 				</label>
 				<input
 					id="pw-current"
@@ -41,7 +41,7 @@ export function PasswordStep({
 						onChange({ ...value, currentPassword: e.target.value })
 					}
 					className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
-					placeholder="Enter current password"
+					placeholder="Enter bootstrap password"
 				/>
 			</div>
 			<div>

@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import type { ParseResumeResponse } from "@/types/api.gen";
 import {
 	useAISettings,
+	useAuthStatus,
 	useChangePassword,
 	useCompleteOnboarding,
 	useUpdateAISettings,
 } from "../../hooks/useApi";
-import { useAuthStore } from "../../stores/auth";
 import { AIProviderStep } from "./AIProviderStep";
 import { LoadingAnimation } from "./LoadingAnimation";
 import { PasswordStep } from "./PasswordStep";
@@ -32,7 +32,7 @@ const STEPS_FIRST_RUN = [
 	{
 		id: "password",
 		title: "Set Your Password",
-		description: "Change the default password to continue",
+		description: "Use the bootstrap password from the initial-password file",
 	},
 	{
 		id: "ai",
@@ -64,9 +64,9 @@ export function OnboardingWizard() {
 	const completeOnboarding = useCompleteOnboarding();
 	const updateAISettings = useUpdateAISettings();
 	const { data: savedAiSettings, isLoading: aiLoading } = useAISettings();
-	const { check, setupComplete } = useAuthStore();
+	const { data: authStatus } = useAuthStatus();
 
-	const isFirstRun = !setupComplete;
+	const isFirstRun = !authStatus?.setup_complete;
 	const steps = isFirstRun ? STEPS_FIRST_RUN : STEPS_RE_RUN;
 
 	const [step, setStep] = useState(0);
@@ -313,7 +313,6 @@ export function OnboardingWizard() {
 			},
 			{
 				onSuccess: async () => {
-					await check();
 					navigate({ to: "/dashboard" });
 				},
 			},

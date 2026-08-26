@@ -4,9 +4,11 @@ import type {
 	AIUpdateRequest,
 	AIValidateKeyRequest,
 	AIValidateKeyResponse,
+	AuthLoginResponse,
 	AuthStatusResponse,
-	AuthTokenResponse,
+	ChangePasswordRequest,
 	ErrorResponse,
+	OnboardingCompleteRequest,
 	ParseResumeResponse,
 	RoleDetailResponse,
 	RoleListResponse,
@@ -18,44 +20,10 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
-function getToken(): string | null {
-	if (typeof window === "undefined") return null;
-	try {
-		return localStorage.getItem("jobmatcha_token");
-	} catch {
-		return null;
-	}
-}
-
-function setToken(token: string) {
-	if (typeof window === "undefined") return;
-	try {
-		localStorage.setItem("jobmatcha_token", token);
-	} catch {
-		// localStorage unavailable
-	}
-}
-
-function clearToken() {
-	if (typeof window === "undefined") return;
-	try {
-		localStorage.removeItem("jobmatcha_token");
-	} catch {
-		// localStorage unavailable
-	}
-}
-
 export const api = ky.create({
 	prefix: API_BASE,
+	credentials: "same-origin",
 	hooks: {
-		beforeRequest: [
-			({ request }) => {
-				const token = getToken();
-				if (token) {
-					request.headers.set("Authorization", `Bearer ${token}`);
-				}
-			},
-		],
 		beforeError: [
 			({ error }) => {
 				const httpError = error as HTTPError;
@@ -71,18 +39,11 @@ export const api = ky.create({
 
 // Auth helpers
 export const authApi = {
-	login: async (password: string) => {
-		const res = await api
-			.post("auth/login", { json: { password } })
-			.json<AuthTokenResponse>();
-		setToken(res.token);
-		return res;
-	},
+	login: (password: string) =>
+		api.post("auth/login", { json: { password } }).json<AuthLoginResponse>(),
 
 	logout: async () => {
-		const res = await api.post("auth/logout").json();
-		clearToken();
-		return res;
+		return api.post("auth/logout").json();
 	},
 
 	status: () => api.get("auth/status").json<AuthStatusResponse>(),
@@ -90,7 +51,10 @@ export const authApi = {
 	changePassword: (currentPassword: string, newPassword: string) =>
 		api
 			.post("auth/change-password", {
-				json: { current_password: currentPassword, new_password: newPassword },
+				json: {
+					current_password: currentPassword,
+					new_password: newPassword,
+				} satisfies ChangePasswordRequest,
 			})
 			.json(),
 };
@@ -154,6 +118,6 @@ export const aiApi = {
 
 // Onboarding
 export const onboardingApi = {
-	complete: (data: Record<string, unknown>) =>
+	complete: (data: OnboardingCompleteRequest) =>
 		api.post("onboarding/complete", { json: data }).json(),
 };
