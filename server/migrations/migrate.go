@@ -27,9 +27,7 @@ func Migrate(db *gorm.DB) error {
 
 	// Backfill columns that may not exist on older databases
 	// (GORM AutoMigrate doesn't always add columns to existing SQLite tables)
-	backfillConfigColumns(db)
-
-	return nil
+	return backfillConfigColumns(db)
 }
 
 // SQLite cannot add a NOT NULL column without a default value to a table that
@@ -47,7 +45,7 @@ func backfillResumeColumns(db *gorm.DB) error {
 	return nil
 }
 
-func backfillConfigColumns(db *gorm.DB) {
+func backfillConfigColumns(db *gorm.DB) error {
 	type colDef struct {
 		name string
 		typ  string
@@ -65,9 +63,12 @@ func backfillConfigColumns(db *gorm.DB) {
 	for _, c := range cols {
 		if !columnExists(db, "config", c.name) {
 			slog.Info("adding missing column", "table", "config", "column", c.name)
-			db.Exec("ALTER TABLE config ADD COLUMN " + c.name + " " + c.typ)
+			if err := db.Exec("ALTER TABLE config ADD COLUMN " + c.name + " " + c.typ).Error; err != nil {
+				return fmt.Errorf("adding config.%s: %w", c.name, err)
+			}
 		}
 	}
+	return nil
 }
 
 func columnExists(db *gorm.DB, table, column string) bool {
