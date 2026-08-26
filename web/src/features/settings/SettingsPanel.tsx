@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { CheckCircle, Settings as SettingsIcon, X } from "lucide-react";
+import { CheckCircle, Settings as SettingsIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Modal } from "@/components/ui/modal";
 import {
 	useAISettings,
 	useChangePassword,
@@ -71,8 +72,12 @@ function AITab() {
 			// Toggling from off to on without a key — just save enabled state
 			return aiSettings?.enabled !== enabled;
 		}
-		// Enabled: need a validated key to save
-		return valid === true && apiKey.trim().length > 0;
+		// A previously saved key can be enabled again without re-entering it.
+		// A newly entered key must still be validated before saving.
+		return (
+			aiSettings?.has_api_key === true ||
+			(valid === true && apiKey.trim().length > 0)
+		);
 	})();
 
 	if (isLoading) return <LoadingAnimation label="Loading..." />;
@@ -162,7 +167,8 @@ function AITab() {
 
 						{aiSettings?.has_api_key && !apiKey.trim() && (
 							<p className="mt-1 text-[10px] text-[#4a5a4a]">
-								Key is already saved. Click Validate to confirm, then Save.
+								A key is already saved. You can enable the provider and save, or
+								replace the key below.
 							</p>
 						)}
 
@@ -179,18 +185,17 @@ function AITab() {
 							<p className="mt-2 text-xs text-red-400">Invalid key</p>
 						)}
 					</div>
-
-					{/* Save — only enabled when key is validated */}
-					<button
-						type="button"
-						onClick={handleSave}
-						disabled={!canSave || updateAi.isPending}
-						className="w-full rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{saved ? "Saved ✓" : updateAi.isPending ? "Saving..." : "Save"}
-					</button>
 				</>
 			)}
+
+			<button
+				type="button"
+				onClick={handleSave}
+				disabled={!canSave || updateAi.isPending}
+				className="w-full rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				{saved ? "Saved ✓" : updateAi.isPending ? "Saving..." : "Save"}
+			</button>
 		</div>
 	);
 }
@@ -434,54 +439,20 @@ export function SettingsPanel({ onClose }: Props) {
 	const navigate = useNavigate();
 	const [tab, setTab] = useState<Tab>("ai");
 
-	const dialogRef = useRef<HTMLDialogElement>(null);
-
-	useEffect(() => {
-		dialogRef.current?.showModal();
-		return () => dialogRef.current?.close();
-	}, []);
-
-	const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-		if (e.target === dialogRef.current) onClose();
-	};
-
-	const handleCancel = (e: React.SyntheticEvent<HTMLDialogElement>) => {
-		e.preventDefault();
-		onClose();
-	};
-
 	const handleReRunOnboarding = () => {
 		onClose();
 		navigate({ to: "/onboarding" });
 	};
 
 	return (
-		<dialog
-			ref={dialogRef}
-			onClick={handleBackdropClick}
-			onCancel={handleCancel}
-			onKeyDown={(e) => {
-				if (e.key === "Escape") handleCancel(e);
-			}}
-			className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center bg-transparent open:flex"
+		<Modal
+			open
+			onClose={onClose}
+			title="Settings"
+			icon={<SettingsIcon size={14} className="text-[#6a7a6a]" />}
+			panelClassName="max-w-md max-h-[90vh]"
 		>
-			<style>{`dialog::backdrop { background: rgba(0,0,0,0.5); }`}</style>
-			<div className="w-full max-w-md rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-0 shadow-2xl max-h-[90vh] flex flex-col">
-				{/* Header */}
-				<div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-3">
-					<div className="flex items-center gap-2">
-						<SettingsIcon size={14} className="text-[#6a7a6a]" />
-						<h3 className="text-sm font-semibold text-[#e8e8e8]">Settings</h3>
-					</div>
-					<button
-						type="button"
-						onClick={onClose}
-						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
-					>
-						<X size={14} />
-					</button>
-				</div>
-
+			<div className="flex min-h-0 flex-1 flex-col">
 				{/* Tabs */}
 				<div className="flex border-b border-[#1a2a1a]">
 					{TABS.map((t) => (
@@ -519,6 +490,6 @@ export function SettingsPanel({ onClose }: Props) {
 					</button>
 				</div>
 			</div>
-		</dialog>
+		</Modal>
 	);
 }

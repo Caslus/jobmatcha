@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import type { AIInfoResponse } from "@/types/api.gen";
 import {
 	aiApi,
 	authApi,
@@ -109,6 +110,29 @@ export function usePatchRole() {
 	});
 }
 
+export function useTailoredResume(id: number | null) {
+	return useQuery({
+		queryKey: queryKeys.roles.tailoredResume(id as number),
+		queryFn: () => rolesApi.getTailoredResume(id as number),
+		enabled: id !== null,
+		retry: false,
+		staleTime: 1000 * 60 * 5,
+	});
+}
+
+export function useTailorResume() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: number) => rolesApi.tailor(id),
+		onSuccess: (tailored) => {
+			queryClient.setQueryData(
+				queryKeys.roles.tailoredResume(tailored.role_id),
+				tailored,
+			);
+		},
+	});
+}
+
 // ---- Settings hooks ----
 
 export function useSettings() {
@@ -182,7 +206,24 @@ export function useUpdateAISettings() {
 	return useMutation({
 		mutationFn: (data: Parameters<typeof aiApi.updateSettings>[0]) =>
 			aiApi.updateSettings(data),
-		onSuccess: () => {
+		onSuccess: (_, updates) => {
+			queryClient.setQueryData<AIInfoResponse>(
+				queryKeys.ai.settings,
+				(current) =>
+					current
+						? {
+								...current,
+								provider: updates.provider ?? current.provider,
+								enabled: updates.enabled ?? current.enabled,
+								has_api_key: updates.api_key ? true : current.has_api_key,
+								user_name: updates.user_name ?? current.user_name,
+								user_email: updates.user_email ?? current.user_email,
+								user_location: updates.user_location ?? current.user_location,
+								user_linkedin: updates.user_linkedin ?? current.user_linkedin,
+								user_github: updates.user_github ?? current.user_github,
+							}
+						: current,
+			);
 			queryClient.invalidateQueries({ queryKey: queryKeys.ai.settings });
 		},
 	});

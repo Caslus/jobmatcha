@@ -1,19 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 
 type ThemeMode = "light" | "dark" | "auto";
-
-function getInitialMode(): ThemeMode {
-	if (typeof window === "undefined") {
-		return "auto";
-	}
-
-	const stored = window.localStorage.getItem("theme");
-	if (stored === "light" || stored === "dark" || stored === "auto") {
-		return stored;
-	}
-
-	return "auto";
-}
 
 function applyThemeMode(mode: ThemeMode) {
 	const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -32,13 +20,15 @@ function applyThemeMode(mode: ThemeMode) {
 }
 
 export default function ThemeToggle() {
-	const [mode, setMode] = useState<ThemeMode>("auto");
+	const [mode, setMode] = useLocalStorageState<ThemeMode>("theme", "auto", {
+		parse: (raw) =>
+			raw === "light" || raw === "dark" || raw === "auto" ? raw : undefined,
+		serialize: (value) => value,
+	});
 
 	useEffect(() => {
-		const initialMode = getInitialMode();
-		setMode(initialMode);
-		applyThemeMode(initialMode);
-	}, []);
+		applyThemeMode(mode);
+	}, [mode]);
 
 	useEffect(() => {
 		if (mode !== "auto") {
@@ -58,8 +48,6 @@ export default function ThemeToggle() {
 		const nextMode: ThemeMode =
 			mode === "light" ? "dark" : mode === "dark" ? "auto" : "light";
 		setMode(nextMode);
-		applyThemeMode(nextMode);
-		window.localStorage.setItem("theme", nextMode);
 	}
 
 	const label =

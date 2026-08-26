@@ -7,6 +7,7 @@ type Repositories struct {
 	Company *CompanyRepo
 	Config  *ConfigRepo
 	ScanJob *ScanJobRepo
+	Resume  *ResumeRepo
 }
 
 func NewRepositories(db *gorm.DB) *Repositories {
@@ -15,5 +16,6 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		Company: NewCompanyRepo(db),
 		Config:  NewConfigRepo(db),
 		ScanJob: NewScanJobRepo(db),
+		Resume:  NewResumeRepo(db),
 	}
 }

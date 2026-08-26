@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/OpenRouterTeam/go-sdk/models/components"
+	"github.com/caslus/jobmatcha/internal/model"
 )
 
 // parseJSONResult parses the LLM's text response into a ParseResumeResult.
@@ -42,6 +43,37 @@ func parseJSONResult(text string) (*ParseResumeResult, error) {
 			}
 		}
 		return nil, fmt.Errorf("json parse: %w\nraw text: %.200s", err, text)
+	}
+	return &result, nil
+}
+
+type tailorResumeResult struct {
+	Document model.ResumeDocument `json:"document"`
+}
+
+func parseTailorResumeResultJSON(text string) (*tailorResumeResult, error) {
+	cleaned := strings.TrimSpace(text)
+	if idx := strings.Index(cleaned, "```"); idx >= 0 {
+		rest := cleaned[idx+3:]
+		if langEnd := strings.Index(rest, "\n"); langEnd >= 0 {
+			rest = rest[langEnd+1:]
+		}
+		if end := strings.LastIndex(rest, "```"); end >= 0 {
+			rest = rest[:end]
+		}
+		cleaned = strings.TrimSpace(rest)
+	}
+
+	var result tailorResumeResult
+	if err := json.Unmarshal([]byte(cleaned), &result); err != nil {
+		if braceStart := strings.Index(cleaned, "{"); braceStart >= 0 {
+			if braceEnd := strings.LastIndex(cleaned, "}"); braceEnd > braceStart {
+				if retryErr := json.Unmarshal([]byte(cleaned[braceStart:braceEnd+1]), &result); retryErr == nil {
+					return &result, nil
+				}
+			}
+		}
+		return nil, fmt.Errorf("json parse: %w", err)
 	}
 	return &result, nil
 }

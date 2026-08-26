@@ -15,8 +15,6 @@ import (
 	"github.com/ledongthuc/pdf"
 )
 
-const maxUploadSize = 10 << 20 // 10 MB
-
 type AIHandler struct {
 	cfgRepo *repository.ConfigRepo
 }
@@ -51,95 +49,6 @@ func (h *AIHandler) ValidateKey(c *gin.Context) {
 		Valid:  valid,
 		Models: count,
 	})
-}
-
-// POST /api/ai/parse-resume
-func (h *AIHandler) ParseResume(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
-	if err := c.Request.ParseMultipartForm(maxUploadSize); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "File too large or invalid form."})
-		return
-	}
-
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "File is required."})
-		return
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to read file."})
-		return
-	}
-
-	ext := strings.ToLower(filepathExt(header.Filename))
-	contentType := header.Header.Get("Content-Type")
-
-	var resumeText string
-	switch {
-	case ext == ".md" || ext == ".txt" || contentType == "text/markdown" || contentType == "text/plain":
-		resumeText = string(data)
-
-	case ext == ".pdf" || contentType == "application/pdf":
-		text, err := extractPDFText(data)
-		if err != nil {
-			slog.Error("pdf text extraction failed", "error", err)
-			c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Failed to extract text from PDF: " + err.Error()})
-			return
-		}
-		resumeText = text
-
-	default:
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: fmt.Sprintf("Unsupported file type: %s. Accepted: .md, .txt, .pdf", ext)})
-		return
-	}
-
-	if strings.TrimSpace(resumeText) == "" {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "No text content found in file."})
-		return
-	}
-
-	slog.Info("resume text extracted",
-		"filename", header.Filename,
-		"size", len(data),
-		"text_length", len(resumeText),
-		"ext", ext,
-	)
-	slog.Info("resume text content", "text", resumeText)
-
-	cfg, err := h.cfgRepo.Get()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
-		return
-	}
-	if cfg.AIApiKey == "" {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "No AI API key configured. Set it in settings first."})
-		return
-	}
-
-	result, err := ai.ParseResume(c.Request.Context(), cfg.AIApiKey, resumeText)
-	if err != nil {
-		slog.Error("resume parse failed", "error", err)
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to parse resume: " + err.Error()})
-		return
-	}
-
-	resp := model.ParseResumeResponse{
-		Name:                     result.Name,
-		Email:                    result.Email,
-		Location:                 result.Location,
-		LinkedinURL:              result.LinkedinURL,
-		GithubURL:                result.GithubURL,
-		SuggestedInclude:         result.IncludeKw,
-		SuggestedExclude:         result.ExcludeKw,
-		SuggestedWorkTypes:       result.WorkTypes,
-		SuggestedLocationKeywords: result.LocationKw,
-	}
-
-	slog.Info("resume parsed via api", "name", resp.Name)
-	c.JSON(http.StatusOK, resp)
 }
 
 // GET /api/settings/ai
@@ -238,7 +147,6 @@ func extractPDFText(data []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading pdf text: %w", err)
 	}
-
 	plain := strings.TrimSpace(string(text))
 	if plain == "" {
 		return "", fmt.Errorf("no text content found in PDF")

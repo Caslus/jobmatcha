@@ -70,7 +70,6 @@ export function OnboardingWizard() {
 	const steps = isFirstRun ? STEPS_FIRST_RUN : STEPS_RE_RUN;
 
 	const [step, setStep] = useState(0);
-	const [passwordReady, setPasswordReady] = useState(false);
 	const [aiConfig, setAiConfig] = useState({
 		provider: "openrouter",
 		apiKey: "",
@@ -87,6 +86,7 @@ export function OnboardingWizard() {
 	const [passwordValues, setPasswordValues] = useState({
 		currentPassword: "",
 		newPassword: "",
+		confirmPassword: "",
 	});
 	const [aiSkipped, setAiSkipped] = useState(false);
 	const [keyValidated, setKeyValidated] = useState(false);
@@ -128,6 +128,8 @@ export function OnboardingWizard() {
 						return "Current password is required.";
 					if (passwordValues.newPassword.length < 6)
 						return "New password must be at least 6 characters.";
+					if (passwordValues.newPassword !== passwordValues.confirmPassword)
+						return "Passwords do not match.";
 					return null;
 				case 1:
 					if (!aiSkipped && !keyValidated)
@@ -179,7 +181,11 @@ export function OnboardingWizard() {
 		if (isFirstRun) {
 			switch (step) {
 				case 0:
-					return passwordReady;
+					return (
+						!!passwordValues.currentPassword &&
+						passwordValues.newPassword.length >= 6 &&
+						passwordValues.newPassword === passwordValues.confirmPassword
+					);
 				case 1:
 					return aiSkipped || keyValidated;
 				case 2:
@@ -207,6 +213,13 @@ export function OnboardingWizard() {
 	};
 
 	const handlePasswordSubmit = () => {
+		if (
+			!passwordValues.currentPassword ||
+			passwordValues.newPassword.length < 6 ||
+			passwordValues.newPassword !== passwordValues.confirmPassword
+		) {
+			return;
+		}
 		changePassword.mutate(
 			{
 				currentPassword: passwordValues.currentPassword,
@@ -214,7 +227,6 @@ export function OnboardingWizard() {
 			},
 			{
 				onSuccess: () => {
-					setPasswordReady(true);
 					setStep(1);
 				},
 			},
@@ -223,6 +235,10 @@ export function OnboardingWizard() {
 
 	const handleOnNext = () => {
 		markAttempted(step);
+		if (isFirstRun && step === 0) {
+			handlePasswordSubmit();
+			return;
+		}
 		if (step === aiStepIndex && !aiSkipped && keyValidated && aiConfig.apiKey) {
 			updateAISettings.mutate(
 				{ api_key: aiConfig.apiKey, provider: aiConfig.provider },
@@ -317,6 +333,7 @@ export function OnboardingWizard() {
 					return (
 						<div>
 							<PasswordStep
+								value={passwordValues}
 								onChange={setPasswordValues}
 								onSubmit={handlePasswordSubmit}
 								isSubmitting={changePassword.isPending}
@@ -361,6 +378,7 @@ export function OnboardingWizard() {
 									include_keywords: [],
 									exclude_keywords: [],
 									work_types: [],
+									location_keywords: [],
 								}
 							}
 							onChange={setReviewData}
@@ -407,6 +425,7 @@ export function OnboardingWizard() {
 								include_keywords: [],
 								exclude_keywords: [],
 								work_types: [],
+								location_keywords: [],
 							}
 						}
 						onChange={setReviewData}

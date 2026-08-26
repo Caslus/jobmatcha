@@ -17,6 +17,7 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 	settings := NewSettingsHandler(repos.Config, schedulerSvc)
 	scan := NewScanHandler(scannerSvc)
 	aiH := NewAIHandler(repos.Config)
+	resumeH := NewResumeHandler(repos)
 	onboarding := NewOnboardingHandler(repos.Config, scannerSvc, schedulerSvc)
 
 	// Public routes (only what's needed before auth)
@@ -43,7 +44,9 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 
 		// AI & Onboarding endpoints
 		protected.POST("/ai/validate-key", aiH.ValidateKey)
-		protected.POST("/ai/parse-resume", aiH.ParseResume)
+		protected.POST("/ai/parse-resume", resumeH.ParseUpload)
+		protected.POST("/roles/:id/tailor", resumeH.Tailor)
+		protected.GET("/roles/:id/tailored-resume", resumeH.GetTailored)
 		protected.GET("/settings/ai", aiH.GetSettings)
 		protected.PUT("/settings/ai", aiH.UpdateSettings)
 		protected.POST("/onboarding/complete", onboarding.Complete)

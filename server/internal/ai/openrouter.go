@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -9,12 +10,14 @@ import (
 	openrouter "github.com/OpenRouterTeam/go-sdk"
 	"github.com/OpenRouterTeam/go-sdk/models/components"
 	"github.com/OpenRouterTeam/go-sdk/optionalnullable"
+	"github.com/caslus/jobmatcha/internal/model"
 )
 
 const (
-	resumeParseModel   = "openai/gpt-4o-mini"
-	requestTimeout     = 30 * time.Second
-	resumeParseTimeout = 60 * time.Second
+	resumeParseModel    = "openai/gpt-4o-mini"
+	requestTimeout      = 30 * time.Second
+	resumeParseTimeout  = 90 * time.Second
+	resumeTailorTimeout = 90 * time.Second
 )
 
 // newClient creates an OpenRouter SDK client with the given API key.
@@ -24,6 +27,76 @@ func newClient(apiKey string) *openrouter.OpenRouter {
 		openrouter.WithHTTPReferer("https://jobmatcha.app"),
 		openrouter.WithXTitle("jobmatcha"),
 	)
+}
+
+// TailorResume rewrites and prioritizes a candidate's existing experience for
+// one role. The model returns a structured document that the frontend owns for
+// preview, editing, and PDF export.
+func TailorResume(ctx context.Context, apiKey string, resume model.ResumeDocument, roleTitle, companyName, roleLocation, roleDescription string) (*model.ResumeDocument, error) {
+	client := newClient(apiKey)
+
+	ctx, cancel := context.WithTimeout(ctx, resumeTailorTimeout)
+	defer cancel()
+
+	systemContent := components.CreateChatSystemMessageContentStr(
+		"You are an expert resume editor. Tailor the supplied structured resume for the job. Return ONLY JSON matching the requested schema. " +
+			"Preserve the document's structure exactly: header, section order, section headings, section kinds, item counts, entry counts, titles, organizations, locations, dates, contact details, and bullet counts must all remain unchanged. " +
+			"Only make small factual wording improvements to summary, entry highlights, and section items where the source already supports job-relevant ATS keywords. The summary should explicitly position the candidate for the target role by using its role name or a truthful equivalent when supported by their experience; for example, a software engineer with reliability, observability, and incident-management experience may be described as a Software Reliability Engineer (SRE). This is positioning, not a claim that they held that job title. " +
+			"Do not invent facts, skills, metrics, responsibilities, employers, titles, credentials, or keywords. Keep all text unchanged when no safe edit exists.",
+	)
+	systemMsg := components.CreateChatMessagesSystem(components.ChatSystemMessage{Content: systemContent})
+
+	resumeJSON, err := json.Marshal(resume)
+	if err != nil {
+		return nil, fmt.Errorf("encoding resume document: %w", err)
+	}
+	userContent := components.CreateChatUserMessageContentStr(
+		"JOB\nTitle: " + roleTitle + "\nCompany: " + companyName + "\nLocation: " + roleLocation + "\nDescription:\n" + roleDescription +
+			"\n\nCANDIDATE RESUME JSON\n" + string(resumeJSON),
+	)
+	userMsg := components.CreateChatMessagesUser(components.ChatUserMessage{Content: userContent})
+
+	schema := map[string]any{
+		"type":                 "object",
+		"properties":           map[string]any{"document": resumeDocumentSchema()},
+		"required":             []any{"document"},
+		"additionalProperties": false,
+	}
+
+	jsonSchema := components.ChatFormatJSONSchemaConfig{
+		JSONSchema: components.ChatJSONSchemaConfig{
+			Name:        "tailored_resume",
+			Description: openrouter.String("A factual, tailored resume document"),
+			Schema:      schema,
+			Strict:      optionalnullable.From(openrouter.Bool(true)),
+		},
+		Type: components.ChatFormatJSONSchemaConfigTypeJSONSchema,
+	}
+	responseFormat := components.CreateResponseFormatJSONSchema(jsonSchema)
+	modelName := resumeParseModel
+	stream := false
+	request := components.ChatRequest{Model: &modelName, Messages: []components.ChatMessages{systemMsg, userMsg}, ResponseFormat: &responseFormat, Stream: &stream}
+
+	response, err := client.Chat.Send(ctx, request, nil)
+	if err != nil {
+		return nil, fmt.Errorf("resume tailor request: %w", err)
+	}
+	if response == nil || response.ChatResult == nil || len(response.ChatResult.GetChoices()) == 0 {
+		return nil, fmt.Errorf("empty response from OpenRouter")
+	}
+	content, ok := response.ChatResult.GetChoices()[0].Message.GetContent().Get()
+	if !ok || content == nil {
+		return nil, fmt.Errorf("empty content in assistant response")
+	}
+	result, err := parseTailorResumeResultJSON(extractAssistantText(*content))
+	if err != nil {
+		return nil, fmt.Errorf("parsing tailored resume: %w", err)
+	}
+	document, err := mergeTailoredDocument(resume, result.Document)
+	if err != nil {
+		return nil, fmt.Errorf("validating tailored document: %w", err)
+	}
+	return &document, nil
 }
 
 // ValidateKey checks whether the given API key is valid by listing models.
@@ -55,15 +128,16 @@ func ValidateKey(ctx context.Context, apiKey string) (bool, int, error) {
 
 // ParseResumeResult holds structured data extracted from a resume.
 type ParseResumeResult struct {
-	Name        string   `json:"name"`
-	Email       string   `json:"email"`
-	Location    string   `json:"location"`
-	LinkedinURL string   `json:"linkedin_url,omitempty"`
-	GithubURL   string   `json:"github_url,omitempty"`
-	IncludeKw   []string `json:"suggested_include"`
-	ExcludeKw   []string `json:"suggested_exclude"`
-	WorkTypes   []string `json:"suggested_work_types"`
-	LocationKw  []string `json:"suggested_location_keywords"`
+	Name        string               `json:"name"`
+	Email       string               `json:"email"`
+	Location    string               `json:"location"`
+	LinkedinURL string               `json:"linkedin_url,omitempty"`
+	GithubURL   string               `json:"github_url,omitempty"`
+	IncludeKw   []string             `json:"suggested_include"`
+	ExcludeKw   []string             `json:"suggested_exclude"`
+	WorkTypes   []string             `json:"suggested_work_types"`
+	LocationKw  []string             `json:"suggested_location_keywords"`
+	Document    model.ResumeDocument `json:"document"`
 }
 
 // ParseResume sends resume text to the LLM and extracts structured profile data.
@@ -114,6 +188,11 @@ func ParseResume(ctx context.Context, apiKey string, resumeText string) (*ParseR
 			"and any region mentioned. For example if located in 'Curitiba, Brazil' include " +
 			"'curitiba', 'paraná', 'brazil', 'brasil', 'remote', 'hybrid', 'latin america', 'south america'. " +
 			"ALL location keywords must be lowercase. " +
+			"For document: produce a layout-ready structured resume. Header holds name and ordered contact lines. Summary is the summary text or empty. Sections must preserve the source order. " +
+			"Use kind 'experience' or 'education' for sections with entries, otherwise 'list'. Each experience/education entry must keep its title, organization, location, date_range, and ordered highlights separate. " +
+			"For a skills or technologies list, items MUST be 2–6 labelled category rows, never one item per skill. Keep source order within each row; for example: 'Backend: Java, Spring, Go, REST APIs' and 'Cloud & Operations: AWS, Docker, Linux, Grafana'. " +
+			"For certifications, languages, achievements, projects, and other lists, each meaningful source line is one ordered item. " +
+			"Only repair PDF-extraction whitespace. Do not add, omit, reorder, or rewrite any resume content. " +
 			"Always output valid JSON with no markdown formatting.",
 	)
 
@@ -140,8 +219,9 @@ func ParseResume(ctx context.Context, apiKey string, resumeText string) (*ParseR
 			"suggested_exclude":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
 			"suggested_work_types":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
 			"suggested_location_keywords": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+			"document":                    resumeDocumentSchema(),
 		},
-		"required":             []any{"name", "email", "location", "linkedin_url", "github_url", "suggested_include", "suggested_exclude", "suggested_work_types", "suggested_location_keywords"},
+		"required":             []any{"name", "email", "location", "linkedin_url", "github_url", "suggested_include", "suggested_exclude", "suggested_work_types", "suggested_location_keywords", "document"},
 		"additionalProperties": false,
 	}
 

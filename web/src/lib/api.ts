@@ -13,6 +13,7 @@ import type {
 	ScanJobResponse,
 	SettingsResponse,
 	SettingsUpdateRequest,
+	TailoredResumeResponse,
 } from "@/types/api.gen";
 
 const API_BASE = "http://localhost:8181/api";
@@ -109,6 +110,16 @@ export const rolesApi = {
 		id: number,
 		updates: { is_hidden?: boolean; is_interested?: boolean },
 	) => api.patch(`roles/${id}`, { json: updates }).json(),
+
+	tailor: (id: number) =>
+		api
+			.post(`roles/${id}/tailor`, { timeout: 105_000 })
+			.json<TailoredResumeResponse>(),
+
+	getTailoredResume: (id: number) =>
+		api
+			.get(`roles/${id}/tailored-resume`)
+			.json<TailoredResumeResponse | null>(),
 };
 
 // Settings
@@ -136,7 +147,7 @@ export const aiApi = {
 		const form = new FormData();
 		form.append("file", file);
 		return api
-			.post("ai/parse-resume", { body: form })
+			.post("ai/parse-resume", { body: form, timeout: 105_000 })
 			.json<ParseResumeResponse>();
 	},
 };

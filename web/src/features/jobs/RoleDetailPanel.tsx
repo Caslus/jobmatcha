@@ -7,15 +7,24 @@ import {
 	Globe,
 	MapPin,
 	User,
+	WandSparkles,
 	X,
 	Zap,
 } from "lucide-react";
+import { useState } from "react";
 import { Tooltip } from "../../components/Tooltip";
-import { usePatchRole, useRole } from "../../hooks/useApi";
+import {
+	useAISettings,
+	usePatchRole,
+	useRole,
+	useTailoredResume,
+	useTailorResume,
+} from "../../hooks/useApi";
 import { matchLabel, scoreColor, timeAgo } from "../../lib/dashboard";
 import { formatDate } from "../../lib/date";
 import type { DescriptionFormat } from "../../lib/description";
-import type { RoleDetailResponse } from "../../types/api.gen";
+import type { ResumeDocument, RoleDetailResponse } from "../../types/api.gen";
+import { TailoredResumePreview } from "../resumes/TailoredResumePreview";
 import { JobDescription } from "./JobDescription";
 
 interface RoleDetailPanelProps {
@@ -25,7 +34,14 @@ interface RoleDetailPanelProps {
 
 export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 	const { data: role } = useRole(selectedId);
+	const { data: aiSettings } = useAISettings();
 	const patchRole = usePatchRole();
+	const tailoredResume = useTailoredResume(selectedId);
+	const tailorResume = useTailorResume();
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewDocument, setPreviewDocument] = useState<ResumeDocument | null>(
+		null,
+	);
 
 	if (!role) {
 		return (
@@ -40,6 +56,22 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 	const handleToggleBookmark = () => {
 		patchRole.mutate({ id: role.id, is_interested: !role.is_interested });
 	};
+
+	const handleTailor = () => {
+		tailorResume.mutate(role.id, {
+			onSuccess: (tailored) => {
+				setPreviewDocument(tailored.document);
+				setPreviewOpen(true);
+			},
+		});
+	};
+
+	const displayedResume = previewDocument ?? tailoredResume.data?.document;
+	const canTailor = aiSettings?.enabled === true;
+	const profileLinks = [
+		aiSettings?.user_linkedin,
+		aiSettings?.user_github,
+	].filter((link): link is string => Boolean(link?.trim()));
 
 	return (
 		<aside className="w-full h-full overflow-y-auto">
@@ -87,7 +119,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 				</div>
 
 				<div className="space-y-4">
-					<div className="flex gap-2">
+					<div className="grid gap-2 sm:grid-cols-2">
 						<button
 							type="button"
 							onClick={handleToggleBookmark}
@@ -122,6 +154,55 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 							</a>
 						)}
 					</div>
+					<button
+						type="button"
+						onClick={handleTailor}
+						disabled={!canTailor || tailorResume.isPending}
+						title={
+							canTailor
+								? undefined
+								: "Enable an AI provider in Settings to tailor resumes"
+						}
+						className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-2.5 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<WandSparkles size={15} />
+						{tailorResume.isPending
+							? "Tailoring resume..."
+							: canTailor
+								? "Tailor resume"
+								: "AI provider disabled"}
+					</button>
+					{tailorResume.isError && (
+						<div className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400/90">
+							{tailorResume.error instanceof Error
+								? tailorResume.error.message
+								: "Could not tailor your resume. Please try again."}
+						</div>
+					)}
+					{tailoredResume.data && (
+						<button
+							type="button"
+							onClick={() => {
+								setPreviewDocument(tailoredResume.data?.document ?? null);
+								setPreviewOpen(true);
+							}}
+							className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#335533] bg-[#0a0f0a] px-4 py-2 text-sm font-medium text-[#9bd398] transition hover:bg-[#173017]"
+						>
+							View tailored resume
+						</button>
+					)}
+					{displayedResume && (
+						<TailoredResumePreview
+							open={previewOpen}
+							document={displayedResume}
+							jobTitle={role.title}
+							profileLinks={profileLinks}
+							onClose={() => {
+								setPreviewOpen(false);
+								setPreviewDocument(null);
+							}}
+						/>
+					)}
 
 					{role.match_details && <MatchAnalysisCard role={role} />}
 

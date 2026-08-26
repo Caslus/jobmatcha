@@ -1,31 +1,26 @@
-import { useState } from "react";
-
 interface Props {
-	onChange: (data: { currentPassword: string; newPassword: string }) => void;
+	value: {
+		currentPassword: string;
+		newPassword: string;
+		confirmPassword: string;
+	};
+	onChange: (data: {
+		currentPassword: string;
+		newPassword: string;
+		confirmPassword: string;
+	}) => void;
 	onSubmit: () => void;
 	isSubmitting?: boolean;
 }
 
-export function PasswordStep({ onChange, onSubmit, isSubmitting }: Props) {
-	const [current, setCurrent] = useState("");
-	const [next, setNext] = useState("");
-	const [confirm, setConfirm] = useState("");
-	const [error, setError] = useState("");
-
+export function PasswordStep({
+	value,
+	onChange,
+	onSubmit,
+	isSubmitting,
+}: Props) {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		setError("");
-
-		if (next.length < 6) {
-			setError("Password must be at least 6 characters");
-			return;
-		}
-		if (next !== confirm) {
-			setError("Passwords do not match");
-			return;
-		}
-
-		onChange({ currentPassword: current, newPassword: next });
 		onSubmit();
 	};
 
@@ -41,8 +36,10 @@ export function PasswordStep({ onChange, onSubmit, isSubmitting }: Props) {
 				<input
 					id="pw-current"
 					type="password"
-					value={current}
-					onChange={(e) => setCurrent(e.target.value)}
+					value={value.currentPassword}
+					onChange={(e) =>
+						onChange({ ...value, currentPassword: e.target.value })
+					}
 					className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
 					placeholder="Enter current password"
 				/>
@@ -57,8 +54,8 @@ export function PasswordStep({ onChange, onSubmit, isSubmitting }: Props) {
 				<input
 					id="pw-new"
 					type="password"
-					value={next}
-					onChange={(e) => setNext(e.target.value)}
+					value={value.newPassword}
+					onChange={(e) => onChange({ ...value, newPassword: e.target.value })}
 					className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
 					placeholder="New password (min 6 chars)"
 				/>
@@ -73,21 +70,17 @@ export function PasswordStep({ onChange, onSubmit, isSubmitting }: Props) {
 				<input
 					id="pw-confirm"
 					type="password"
-					value={confirm}
-					onChange={(e) => setConfirm(e.target.value)}
+					value={value.confirmPassword}
+					onChange={(e) =>
+						onChange({ ...value, confirmPassword: e.target.value })
+					}
 					className="w-full rounded-lg border border-[#2a3a2a] bg-[#0a0f0a] px-4 py-3 text-sm text-[#e8e8e8] placeholder-[#4a5a4a] outline-none transition focus:border-[#7dba7a] focus:ring-1 focus:ring-[#7dba7a]/30"
 					placeholder="Confirm new password"
 				/>
 			</div>
 
-			{error && <p className="text-sm text-red-400">{error}</p>}
-
-			<button
-				type="submit"
-				disabled={isSubmitting || !current || !next || !confirm}
-				className="hidden w-full rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-4 py-3 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-			>
-				{isSubmitting ? "Setting..." : "Set Password"}
+			<button type="submit" className="sr-only" disabled={isSubmitting}>
+				Set Password
 			</button>
 		</form>
 	);

@@ -25,6 +25,7 @@ export interface ParseResumeResponse {
   suggested_exclude: string[];
   suggested_work_types: string[];
   suggested_location_keywords: string[];
+  resume: ResumeInfoResponse;
 }
 export interface AIInfoResponse {
   provider: string;
@@ -215,6 +216,78 @@ export interface RoleDetailResponse {
   match_details?: MatchDetails;
   is_hidden: boolean;
   is_interested: boolean;
+}
+
+//////////
+// source: resume.go
+
+/**
+ * Resume stores the extracted, searchable text from an uploaded resume.
+ * The application is currently single-user, so the most recently uploaded
+ * resume is used when tailoring a role.
+ */
+export interface Resume {
+  id: number /* uint */;
+  filename: string;
+  media_type: string;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
+}
+/**
+ * ResumeInfoResponse intentionally excludes the original resume text.
+ */
+export interface ResumeInfoResponse {
+  id: number /* uint */;
+  filename: string;
+  media_type: string;
+  created_at: any /* time.Time */;
+}
+export interface ResumeHeader {
+  name: string;
+  contact: string[];
+}
+export interface ResumeEntry {
+  title: string;
+  organization: string;
+  location: string;
+  date_range: string;
+  highlights: string[];
+}
+export interface ResumeSection {
+  heading: string;
+  kind: string;
+  entries: ResumeEntry[];
+  items: string[];
+}
+/**
+ * ResumeDocument is a layout-ready representation of a resume. Content is
+ * retained only for backward compatibility with previously generated records.
+ */
+export interface ResumeDocument {
+  content?: string;
+  header: ResumeHeader;
+  summary: string;
+  sections: ResumeSection[];
+}
+/**
+ * TailoredResume persists a generated document for a role and source resume.
+ * Regenerating replaces the document for that pair while preserving its ID.
+ */
+export interface TailoredResume {
+  id: number /* uint */;
+  resume_id: number /* uint */;
+  role_id: number /* uint */;
+  document: ResumeDocument;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
+}
+export interface TailoredResumeResponse {
+  id: number /* uint */;
+  resume_id: number /* uint */;
+  role_id: number /* uint */;
+  document: ResumeDocument;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
 }
 
 //////////

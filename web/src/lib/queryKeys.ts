@@ -9,6 +9,8 @@ export const queryKeys = {
 			[...queryKeys.roles.lists(), { page, perPage }] as const,
 		details: () => [...queryKeys.roles.all, "detail"] as const,
 		detail: (id: number) => [...queryKeys.roles.details(), id] as const,
+		tailoredResume: (id: number) =>
+			[...queryKeys.roles.all, "tailored-resume", id] as const,
 	},
 	settings: {
 		all: ["settings"] as const,

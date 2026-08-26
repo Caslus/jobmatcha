@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/caslus/jobmatcha/internal/model"
@@ -8,12 +9,18 @@ import (
 )
 
 func Migrate(db *gorm.DB) error {
+	if err := backfillResumeColumns(db); err != nil {
+		return err
+	}
+
 	if err := db.AutoMigrate(
 		&model.Company{},
 		&model.Role{},
 		&model.Config{},
 		&model.Session{},
 		&model.ScanJob{},
+		&model.Resume{},
+		&model.TailoredResume{},
 	); err != nil {
 		return err
 	}
@@ -22,6 +29,21 @@ func Migrate(db *gorm.DB) error {
 	// (GORM AutoMigrate doesn't always add columns to existing SQLite tables)
 	backfillConfigColumns(db)
 
+	return nil
+}
+
+// SQLite cannot add a NOT NULL column without a default value to a table that
+// already contains rows. Add the structured document column ourselves before
+// AutoMigrate so older databases receive an empty JSON document safely.
+func backfillResumeColumns(db *gorm.DB) error {
+	if !db.Migrator().HasTable(&model.Resume{}) || columnExists(db, "resumes", "document") {
+		return nil
+	}
+
+	slog.Info("adding missing column", "table", "resumes", "column", "document")
+	if err := db.Exec("ALTER TABLE resumes ADD COLUMN document TEXT NOT NULL DEFAULT '{}'").Error; err != nil {
+		return fmt.Errorf("adding resumes.document: %w", err)
+	}
 	return nil
 }
 

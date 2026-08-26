@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { formatDate } from "#/lib/date.ts";
 import { ScanScheduleFields } from "@/components/scan-settings/ScanScheduleFields";
+import { Modal } from "@/components/ui/modal";
 import { useSettings, useUpdateSettings } from "../../hooks/useApi";
 
 interface Props {
@@ -56,159 +57,107 @@ export function ScanSettingsModal({ onClose, scanning, onStartScan }: Props) {
 		);
 	};
 
-	const dialogRef = useRef<HTMLDialogElement>(null);
-
-	useEffect(() => {
-		const el = dialogRef.current;
-		if (!el) return;
-		el.showModal();
-		return () => el.close();
-	}, []);
-
-	const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-		if (e.target === dialogRef.current) onClose();
-	};
-
-	const handleCancel = (e: React.SyntheticEvent<HTMLDialogElement>) => {
-		e.preventDefault();
-		onClose();
-	};
-
 	return (
-		<dialog
-			ref={dialogRef}
-			onClick={handleBackdropClick}
-			onCancel={handleCancel}
-			onKeyDown={(e) => {
-				if (e.key === "Escape") handleCancel(e);
-			}}
-			className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center bg-transparent open:flex"
+		<Modal
+			open
+			onClose={onClose}
+			title="Scan Settings"
+			panelClassName="max-w-sm"
 		>
-			<style>{`dialog::backdrop { background: rgba(0,0,0,0.5); }`}</style>
+			<div className="space-y-4 p-6">
+				{/* Run Manual Scan */}
+				<button
+					type="button"
+					onClick={() => {
+						onStartScan();
+						onClose();
+					}}
+					disabled={scanning}
+					className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 14 14"
+						fill="none"
+						aria-hidden="true"
+						className={scanning ? "hidden" : ""}
+					>
+						<path d="M3 1l10 6-10 6V1z" fill="currentColor" />
+					</svg>
+					{scanning ? "Scanning..." : "Run Manual Scan"}
+				</button>
 
-			<div className="w-full max-w-sm rounded-xl border border-[#1a2a1a] bg-[#0d120d] p-6 shadow-2xl">
-				{/* Header */}
-				<div className="mb-4 flex items-center justify-between">
-					<h3 className="text-sm font-semibold text-[#e8e8e8]">
-						Scan Settings
-					</h3>
+				<hr className="border-[#1a2a1a]" />
+
+				<ScanScheduleFields
+					value={{
+						scan_enabled: draftEnabled,
+						scan_cron_expr: draftCron,
+						scan_timezone: draftTimezone,
+					}}
+					onChange={(v) => {
+						setDraftEnabled(v.scan_enabled);
+						setDraftCron(v.scan_cron_expr);
+						setDraftTimezone(v.scan_timezone);
+						setSaveError(null);
+					}}
+					showInfo={false}
+				/>
+
+				{/* Next run preview */}
+				{draftEnabled && (
+					<div
+						className={`rounded-lg border px-3 py-2 ${
+							cronDirty
+								? "border-[#1a2a1a] bg-[#080b08] opacity-50"
+								: settings?.next_scan_at
+									? "border-[#1a2a1a] bg-[#080b08]"
+									: "hidden"
+						}`}
+					>
+						<p className="text-[10px] uppercase tracking-wider text-[#4a5a4a] mb-0.5">
+							Next scan{" "}
+							<span className="text-[#3a4a3a]">({draftTimezone})</span>
+						</p>
+						{cronDirty ? (
+							<p className="text-xs text-[#4a5a4a] italic">
+								Save to see updated schedule
+							</p>
+						) : settings?.next_scan_at ? (
+							<p className="text-xs text-[#7dba7a]">
+								{formatDate(settings.next_scan_at)}
+							</p>
+						) : null}
+					</div>
+				)}
+
+				{/* Error */}
+				{saveError && (
+					<div className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2">
+						<p className="text-xs text-red-400/90">{saveError}</p>
+					</div>
+				)}
+
+				{/* Save / Cancel */}
+				<div className="flex gap-2 pt-1">
+					<button
+						type="button"
+						onClick={handleSave}
+						disabled={!canSave || updateSettings.isPending}
+						className="flex-1 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-xs font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{updateSettings.isPending ? "Saving..." : "Save"}
+					</button>
 					<button
 						type="button"
 						onClick={onClose}
-						className="text-[#4a5a4a] transition hover:text-[#6a7a6a]"
+						className="flex-1 rounded-lg border border-[#2a3a2a] px-3 py-2 text-xs font-medium text-[#6a7a6a] transition hover:bg-[#1a2a1a]"
 					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 14 14"
-							fill="none"
-							aria-hidden="true"
-						>
-							<path
-								d="M1 1l12 12M13 1L1 13"
-								stroke="currentColor"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-							/>
-						</svg>
+						Cancel
 					</button>
-				</div>
-
-				<div className="space-y-4">
-					{/* Run Manual Scan */}
-					<button
-						type="button"
-						onClick={() => {
-							onStartScan();
-							onClose();
-						}}
-						disabled={scanning}
-						className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-sm font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 14 14"
-							fill="none"
-							aria-hidden="true"
-							className={scanning ? "hidden" : ""}
-						>
-							<path d="M3 1l10 6-10 6V1z" fill="currentColor" />
-						</svg>
-						{scanning ? "Scanning..." : "Run Manual Scan"}
-					</button>
-
-					<hr className="border-[#1a2a1a]" />
-
-					<ScanScheduleFields
-						value={{
-							scan_enabled: draftEnabled,
-							scan_cron_expr: draftCron,
-							scan_timezone: draftTimezone,
-						}}
-						onChange={(v) => {
-							setDraftEnabled(v.scan_enabled);
-							setDraftCron(v.scan_cron_expr);
-							setDraftTimezone(v.scan_timezone);
-							setSaveError(null);
-						}}
-						showInfo={false}
-					/>
-
-					{/* Next run preview */}
-					{draftEnabled && (
-						<div
-							className={`rounded-lg border px-3 py-2 ${
-								cronDirty
-									? "border-[#1a2a1a] bg-[#080b08] opacity-50"
-									: settings?.next_scan_at
-										? "border-[#1a2a1a] bg-[#080b08]"
-										: "hidden"
-							}`}
-						>
-							<p className="text-[10px] uppercase tracking-wider text-[#4a5a4a] mb-0.5">
-								Next scan{" "}
-								<span className="text-[#3a4a3a]">({draftTimezone})</span>
-							</p>
-							{cronDirty ? (
-								<p className="text-xs text-[#4a5a4a] italic">
-									Save to see updated schedule
-								</p>
-							) : settings?.next_scan_at ? (
-								<p className="text-xs text-[#7dba7a]">
-									{formatDate(settings.next_scan_at)}
-								</p>
-							) : null}
-						</div>
-					)}
-
-					{/* Error */}
-					{saveError && (
-						<div className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2">
-							<p className="text-xs text-red-400/90">{saveError}</p>
-						</div>
-					)}
-
-					{/* Save / Cancel */}
-					<div className="flex gap-2 pt-1">
-						<button
-							type="button"
-							onClick={handleSave}
-							disabled={!canSave || updateSettings.isPending}
-							className="flex-1 rounded-lg bg-linear-to-r from-[#7dba7a] to-[#5a8f5a] px-3 py-2 text-xs font-semibold text-[#080908] transition hover:from-[#8dca8a] hover:to-[#6a9f6a] disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{updateSettings.isPending ? "Saving..." : "Save"}
-						</button>
-						<button
-							type="button"
-							onClick={onClose}
-							className="flex-1 rounded-lg border border-[#2a3a2a] px-3 py-2 text-xs font-medium text-[#6a7a6a] transition hover:bg-[#1a2a1a]"
-						>
-							Cancel
-						</button>
-					</div>
 				</div>
 			</div>
-		</dialog>
+		</Modal>
 	);
 }

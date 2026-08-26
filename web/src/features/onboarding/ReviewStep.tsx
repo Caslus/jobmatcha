@@ -14,6 +14,7 @@ interface ManualData {
 	include_keywords: string[];
 	exclude_keywords: string[];
 	work_types: string[];
+	location_keywords: string[];
 }
 
 interface Props {
