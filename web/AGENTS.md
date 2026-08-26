@@ -8,6 +8,7 @@ Run project tasks from the repository root whenever they exist:
 - `mise run "Generate TanStack routes"` after adding, renaming, or removing a
   route file.
 - `mise run "Check Vite web app"` for Biome checks.
+- `mise run "Typecheck Vite web app"` for TypeScript checks.
 - `mise run "Build Vite web app"` to produce the deployment artifact.
 
 Do not edit `src/routeTree.gen.ts` or `src/types/api.gen.ts`; regenerate them

@@ -9,8 +9,7 @@ Gin/SQLite backend in `server/`.
   `mise install` once, then `mise tasks` to discover available tasks.
 - Prefer `mise run "<task name>"` over invoking a command directly whenever a
   matching task exists in `mise.toml`.
-- Mise currently provisions Go 1.26.6, Node 26.7.0, and Air. The Go module
-  declares Go 1.25.10 as its minimum language version.
+- Mise and the Go module use Go 1.26.6; Node 26.7.0 and Air are also pinned.
 - Do not alter generated output or build directories: `web/src/types/api.gen.ts`,
   `web/src/routeTree.gen.ts`, and `web/dist/`.
 
@@ -27,6 +26,7 @@ Use these tasks from the repository root:
 | Regenerate API DTOs | `mise run "Generate TypeScript DTOs"` |
 | Regenerate route tree | `mise run "Generate TanStack routes"` |
 | Check frontend formatting and lint rules | `mise run "Check Vite web app"` |
+| Typecheck the frontend | `mise run "Typecheck Vite web app"` |
 | Build the static frontend | `mise run "Build Vite web app"` |
 | Build the backend binary | `mise run "Build Go backend"` |
 
