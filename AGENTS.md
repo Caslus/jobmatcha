@@ -19,16 +19,19 @@ Use these tasks from the repository root:
 
 | Goal | Task |
 | --- | --- |
-| Run the backend in development | `mise run "Run Go backend"` |
-| Run the frontend in development | `mise run "Run Vite web app"` |
-| Run focused API tests | `mise run "Run Go backend tests"` |
-| Run all backend tests | `mise run "Run all Go tests"` |
-| Regenerate API DTOs | `mise run "Generate TypeScript DTOs"` |
-| Regenerate route tree | `mise run "Generate TanStack routes"` |
-| Check frontend formatting and lint rules | `mise run "Check Vite web app"` |
-| Typecheck the frontend | `mise run "Typecheck Vite web app"` |
-| Build the static frontend | `mise run "Build Vite web app"` |
-| Build the backend binary | `mise run "Build Go backend"` |
+| Run the frontend in development | `mise run "[Web] Run dev"` |
+| Build the static frontend | `mise run "[Web] Build"` |
+| Check frontend formatting and lint rules | `mise run "[Web] Check"` |
+| Typecheck the frontend | `mise run "[Web] Typecheck"` |
+| Regenerate route tree | `mise run "[Web] Generate Routes"` |
+| Run frontend tests | `mise run "[Web] Run tests"` |
+| Run frontend coverage | `mise run "[Web] Run coverage"` |
+| Run the backend in development | `mise run "[Server] Run dev"` |
+| Build the backend binary | `mise run "[Server] Build"` |
+| Regenerate API DTOs | `mise run "[Server] Generate DTOs"` |
+| Run focused API tests | `mise run "[Server] Run API tests"` |
+| Run all backend tests | `mise run "[Server] Run all tests"` |
+| Run backend coverage | `mise run "[Server] Run coverage"` |
 
 Do not use a task to install dependencies; use the appropriate package manager
 only when dependencies actually need to change.
@@ -84,7 +87,7 @@ generated from them.
 
 ## Static deployment contract
 
-`mise run "Build Vite web app"` creates `web/dist/client`. Gin serves that
+`mise run "[Web] Build"` creates `web/dist/client`. Gin serves that
 directory and reserves `/api/*` for JSON endpoints; other GET and HEAD paths
 fall back to `index.html` so deep links work. The TanStack Start server bundle
 is not deployed or used.

@@ -22,11 +22,11 @@ jobs:
           key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
-      - run: mise run "Run Go coverage"
-      - run: mise run "Check Vite web app"
-      - run: mise run "Typecheck Vite web app"
-      - run: mise run "Run Vite web coverage"
-      - run: mise run "Build Vite web app"
+      - run: mise run "[Server] Run coverage"
+      - run: mise run "[Web] Check"
+      - run: mise run "[Web] Typecheck"
+      - run: mise run "[Web] Run coverage"
+      - run: mise run "[Web] Build"
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: coverage
@@ -43,7 +43,7 @@ jobs:
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
       - run: pnpm --dir web exec playwright install --with-deps chromium
-      - run: mise run "Run browser E2E tests"
+      - run: mise run "[Web] Run browser E2E tests"
       - if: failure()
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:

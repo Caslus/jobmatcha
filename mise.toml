@@ -10,17 +10,17 @@ DB_PATH = "data/app.db"
 COOKIE_SECURE = "false"
 
 [tasks]
-"Generate TypeScript DTOs" = { run = "cd server && tygo generate" }
-"Build Go backend" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
-"Run Go backend" = { run = "cd server && air" }
-"Run Go backend tests" = { run = "cd server && go test ./internal/api/ -v -count=1"}
-"Run Vite web app" = { run = "cd web && pnpm run dev" }
-"Run all Go tests" = { run = "cd server && go test ./...", description = "Run the full backend test suite" }
-"Run Go coverage" = { run = "cd server && go test ./... -covermode=atomic -coverpkg=./... -coverprofile=coverage.out && go tool cover -func=coverage.out && go tool cover -html=coverage.out -o coverage.html", description = "Run Go tests with coverage reports" }
-"Generate TanStack routes" = { run = "cd web && pnpm run generate-routes", description = "Regenerate the file-based route tree" }
-"Check Vite web app" = { run = "cd web && pnpm run check", description = "Run Biome formatting and lint checks" }
-"Typecheck Vite web app" = { run = "cd web && pnpm exec tsc --noEmit", description = "Typecheck the frontend" }
-"Run Vite web tests" = { run = "cd web && pnpm run test", description = "Run frontend unit tests" }
-"Run Vite web coverage" = { run = "cd web && pnpm run test:coverage", description = "Run frontend tests with V8 coverage" }
-"Build Vite web app" = { run = "cd web && pnpm run build", description = "Build the static SPA for Gin to serve" }
-"Run browser E2E tests" = { run = "mise run \"Build Vite web app\" && cd web && pnpm exec playwright test", description = "Run Playwright against the production SPA build" }
+"[Web] Run dev" = { run = "cd web && pnpm run dev" }
+"[Web] Build" = { run = "cd web && pnpm run build", description = "Build the static SPA for Gin to serve" }
+"[Web] Check" = { run = "cd web && pnpm run check", description = "Run Biome formatting and lint checks" }
+"[Web] Typecheck" = { run = "cd web && pnpm exec tsc --noEmit", description = "Typecheck the frontend" }
+"[Web] Generate Routes" = { run = "cd web && pnpm run generate-routes", description = "Regenerate the file-based route tree" }
+"[Web] Run tests" = { run = "cd web && pnpm run test", description = "Run frontend unit tests" }
+"[Web] Run coverage" = { run = "cd web && pnpm run test:coverage", description = "Run frontend tests with V8 coverage" }
+"[Web] Run browser E2E tests" = { run = "mise run \"[Web] Build\" && cd web && pnpm exec playwright test", description = "Run Playwright against the production SPA build" }
+"[Server] Run dev" = { run = "cd server && air" }
+"[Server] Build" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
+"[Server] Generate DTOs" = { run = "cd server && tygo generate" }
+"[Server] Run API tests" = { run = "cd server && go test ./internal/api/ -v -count=1" }
+"[Server] Run all tests" = { run = "cd server && go test ./...", description = "Run the full backend test suite" }
+"[Server] Run coverage" = { run = "cd server && go test ./... -covermode=atomic -coverpkg=./... -coverprofile=coverage.out && go tool cover -func=coverage.out && go tool cover -html=coverage.out -o coverage.html", description = "Run Go tests with coverage reports" }
