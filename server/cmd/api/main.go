@@ -102,6 +102,15 @@ func main() {
 	}))
 
 	schedulerSvc := api.RegisterRoutes(r, repos, db)
+	if staticDir := findStaticDir(); staticDir != "" {
+		if err := api.RegisterStaticRoutes(r, staticDir); err != nil {
+			slog.Error("failed to register static frontend", "dir", staticDir, "error", err)
+			os.Exit(1)
+		}
+		slog.Info("serving static frontend", "dir", staticDir)
+	} else {
+		slog.Warn("static frontend not found; serving API only", "hint", "build web or set STATIC_DIR")
+	}
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -135,4 +144,18 @@ func main() {
 	}
 
 	slog.Info("server stopped")
+}
+
+func findStaticDir() string {
+	if configured := os.Getenv("STATIC_DIR"); configured != "" {
+		return configured
+	}
+
+	for _, candidate := range []string{"web/dist/client", "../web/dist/client"} {
+		if _, err := os.Stat(filepath.Join(candidate, "index.html")); err == nil {
+			return candidate
+		}
+	}
+
+	return ""
 }

@@ -16,7 +16,7 @@ import type {
 	TailoredResumeResponse,
 } from "@/types/api.gen";
 
-const API_BASE = "http://localhost:8181/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 function getToken(): string | null {
 	if (typeof window === "undefined") return null;
