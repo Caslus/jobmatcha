@@ -4,7 +4,7 @@ go = "1.26.6"
 node = "26.7.0"
 
 [env]
-WEB_PORT = "8080"
+WEB_PORT = "3000"
 SERVER_PORT = "8181"
 DB_PATH = "data/app.db"
 
@@ -14,3 +14,7 @@ DB_PATH = "data/app.db"
 "Run Go backend" = { run = "cd server && air" }
 "Run Go backend tests" = { run = "cd server && go test ./internal/api/ -v -count=1"}
 "Run Vite web app" = { run = "cd web && pnpm run dev" }
+"Run all Go tests" = { run = "cd server && go test ./...", description = "Run the full backend test suite" }
+"Generate TanStack routes" = { run = "cd web && pnpm run generate-routes", description = "Regenerate the file-based route tree" }
+"Check Vite web app" = { run = "cd web && pnpm run check", description = "Run Biome formatting and lint checks" }
+"Build Vite web app" = { run = "cd web && pnpm run build", description = "Build the static SPA for Gin to serve" }

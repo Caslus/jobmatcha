@@ -10,8 +10,9 @@
 		"includes": [
 			"**/src/**/*",
 			"**/.vscode/**/*",
-			"**/index.html",
+			"index.html",
 			"**/vite.config.ts",
+			"!**/dist",
 			"!**/src/routeTree.gen.ts",
 			"!**/src/types/api.gen.ts",
 			"!**/src/styles.css"
