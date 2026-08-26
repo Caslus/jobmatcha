@@ -10,6 +10,10 @@ server/tmp/
 web/node_modules/
 web/dist/
 web/.astro/
+web/coverage/
+web/playwright-report/
+web/test-results/
+web/.e2e-tmp/
 
 # -- Environment --
 .env

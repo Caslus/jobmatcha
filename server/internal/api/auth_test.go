@@ -15,29 +15,15 @@ import (
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
 	"github.com/caslus/jobmatcha/internal/service"
-	"github.com/caslus/jobmatcha/migrations"
+	"github.com/caslus/jobmatcha/internal/testutil"
 	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	dbPath := filepath.Join(t.TempDir(), "app.db")
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open test db: %v", err)
-	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Fatalf("get test sql db: %v", err)
-	}
-	t.Cleanup(func() { sqlDB.Close() })
-	if err := migrations.Migrate(db); err != nil {
-		t.Fatalf("migrate test db: %v", err)
-	}
-	return db
+	return testutil.Database(t)
 }
 
 func setupTestRouter(t *testing.T, db *gorm.DB, secure bool) (*gin.Engine, string) {
