@@ -1,10 +1,9 @@
 module github.com/caslus/jobmatcha
 
-go 1.25.10
+go 1.26.6
 
 require (
 	github.com/OpenRouterTeam/go-sdk v0.7.62
-	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-co-op/gocron/v2 v2.22.0

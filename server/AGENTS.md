@@ -10,8 +10,8 @@ Use repository tasks from the root whenever they exist:
 - `mise run "Build Go backend"` for the production binary.
 - `mise run "Generate TypeScript DTOs"` after changing exported API DTOs.
 
-Mise provisions Go 1.26.6; `go.mod` declares 1.25.10. Do not edit the
-generated frontend DTO file directly.
+Mise and `go.mod` use Go 1.26.6. Do not edit the generated frontend DTO file
+directly.
 
 ## Boundaries
 
