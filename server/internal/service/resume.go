@@ -42,7 +42,7 @@ func (s *ResumeService) Save(ctx context.Context, filename, mediaType, content s
 }
 
 func (s *ResumeService) Parse(ctx context.Context, resume *model.Resume) (*ai.ParseResumeResult, error) {
-	cfg, err := s.cfgRepo.Get()
+	cfg, err := s.cfgRepo.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("loading AI configuration: %w", err)
 	}
@@ -78,7 +78,7 @@ func (s *ResumeService) Tailor(ctx context.Context, roleID uint) (*model.Tailore
 		return nil, ErrRoleNotFound
 	}
 
-	cfg, err := s.cfgRepo.Get()
+	cfg, err := s.cfgRepo.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("loading AI configuration: %w", err)
 	}

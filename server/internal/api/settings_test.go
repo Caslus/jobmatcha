@@ -11,7 +11,7 @@ import (
 
 func TestSettingsAPI(t *testing.T) {
 	db := setupTestDB(t)
-	router, _ := setupTestRouter(db)
+	router, _ := setupTestRouter(t, db, false)
 
 	// Get a session token
 	token := authenticate(t, router, db)

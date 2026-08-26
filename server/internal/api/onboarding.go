@@ -11,8 +11,8 @@ import (
 )
 
 type OnboardingHandler struct {
-	cfgRepo    *repository.ConfigRepo
-	scanSvc    *service.ScannerService
+	cfgRepo      *repository.ConfigRepo
+	scanSvc      *service.ScannerService
 	schedulerSvc *service.SchedulerService
 }
 
@@ -46,7 +46,7 @@ func (h *OnboardingHandler) Complete(c *gin.Context) {
 		"setup_complete":    true,
 	}
 
-	if err := h.cfgRepo.UpdateMap(updates); err != nil {
+	if err := h.cfgRepo.UpdateMap(c.Request.Context(), updates); err != nil {
 		slog.Error("onboarding: failed to save config", "error", err)
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to save onboarding data."})
 		return

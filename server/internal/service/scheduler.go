@@ -38,7 +38,7 @@ func (s *SchedulerService) Start() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	cfg, err := s.cfgRepo.Get()
+	cfg, err := s.cfgRepo.Get(context.Background())
 	if err != nil {
 		slog.Error("scheduler: failed to read config on start", "error", err)
 		return
@@ -92,7 +92,7 @@ func (s *SchedulerService) ReloadSchedule() {
 	}
 	s.jobID = nil
 
-	cfg, err := s.cfgRepo.Get()
+	cfg, err := s.cfgRepo.Get(context.Background())
 	if err != nil {
 		slog.Error("scheduler: failed to read config on reload", "error", err)
 		return

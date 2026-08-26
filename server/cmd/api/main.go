@@ -7,18 +7,15 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/caslus/jobmatcha/internal/api"
-	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
+	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/caslus/jobmatcha/migrations"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -64,44 +61,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Ensure config has default admin password (backfill for existing DBs)
-	{
-		var count int64
-		db.Model(&model.Config{}).Count(&count)
-		if count == 0 {
-			hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), 12)
-			db.Create(&model.Config{PasswordHash: string(hash)})
-			slog.Info("created default admin password")
-		} else {
-			// Backfill for existing configs that might have an empty hash
-			var cfg model.Config
-			db.Where("id = 1").Find(&cfg)
-			if cfg.PasswordHash == "" {
-				hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), 12)
-				db.Model(&model.Config{}).Where("id = 1").Updates(map[string]interface{}{
-					"password_hash":  string(hash),
-					"setup_complete": false,
-				})
-				slog.Info("backfilled default admin password")
-			}
-		}
-	}
-
 	repos := repository.NewRepositories(db)
+	authSvc := service.NewAuthService(repos, service.BootstrapPasswordFile(dbPath))
+	if err := authSvc.EnsureBootstrap(context.Background()); err != nil {
+		slog.Error("failed to initialize authentication", "error", err)
+		os.Exit(1)
+	}
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(cors.New(cors.Config{
-		AllowOriginFunc: func(origin string) bool {
-			// Allow all localhost origins regardless of port (dev servers float)
-			return strings.HasPrefix(origin, "http://localhost:")
-		},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Cookie"},
-		AllowCredentials: true,
-	}))
-
-	schedulerSvc := api.RegisterRoutes(r, repos, db)
+	schedulerSvc := api.RegisterRoutes(r, repos, db, authSvc)
 	if staticDir := findStaticDir(); staticDir != "" {
 		if err := api.RegisterStaticRoutes(r, staticDir); err != nil {
 			slog.Error("failed to register static frontend", "dir", staticDir, "error", err)

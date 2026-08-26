@@ -32,7 +32,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 	}
 
 	// Load user config for relevance scoring
-	cfg, err := h.repos.Config.Get()
+	cfg, err := h.repos.Config.Get(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
@@ -156,7 +156,7 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 	}
 
 	// Score this role
-	cfg, err := h.repos.Config.Get()
+	cfg, err := h.repos.Config.Get(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return

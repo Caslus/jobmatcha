@@ -11,8 +11,8 @@ type AuthStatusResponse struct {
 	OIDCProviderURL string `json:"oidc_provider_url,omitempty"`
 }
 
-type AuthTokenResponse struct {
-	Token string `json:"token"`
+type AuthLoginResponse struct {
+	Authenticated bool `json:"authenticated"`
 }
 
 type ErrorResponse struct {

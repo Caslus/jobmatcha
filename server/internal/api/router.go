@@ -1,18 +1,20 @@
 package api
 
 import (
+	"os"
+
 	"github.com/caslus/jobmatcha/internal/repository"
 	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) *service.SchedulerService {
+func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB, authSvc *service.AuthService) *service.SchedulerService {
 	scannerSvc := service.NewScannerService(db, repos)
 	schedulerSvc := service.NewSchedulerService(repos.Config, scannerSvc)
 	schedulerSvc.Start()
 
-	auth := NewAuthHandler(repos.Config, db)
+	auth := NewAuthHandler(authSvc, CookieSecureFromEnv(os.Getenv("COOKIE_SECURE")))
 	roles := NewRoleHandler(repos)
 	settings := NewSettingsHandler(repos.Config, schedulerSvc)
 	scan := NewScanHandler(scannerSvc)
@@ -25,13 +27,13 @@ func RegisterRoutes(r *gin.Engine, repos *repository.Repositories, db *gorm.DB) 
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 	r.POST("/api/auth/login", auth.Login)
+	r.GET("/api/auth/status", auth.Status)
 
 	// Protected routes
 	protected := r.Group("/api")
-	protected.Use(Authenticated(db))
+	protected.Use(Authenticated(authSvc))
 	{
 		protected.POST("/auth/logout", auth.Logout)
-		protected.GET("/auth/status", auth.Status)
 		protected.POST("/auth/change-password", auth.ChangePassword)
 		protected.GET("/roles", roles.List)
 		protected.GET("/roles/:id", roles.GetByID)

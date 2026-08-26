@@ -159,8 +159,8 @@ export interface AuthStatusResponse {
   oidc_enabled: boolean;
   oidc_provider_url?: string;
 }
-export interface AuthTokenResponse {
-  token: string;
+export interface AuthLoginResponse {
+  authenticated: boolean;
 }
 export interface ErrorResponse {
   error: string;

@@ -22,7 +22,7 @@ func NewSettingsHandler(cfgRepo *repository.ConfigRepo, scheduler *service.Sched
 
 // GET /api/settings
 func (h *SettingsHandler) Get(c *gin.Context) {
-	cfg, err := h.cfgRepo.Get()
+	cfg, err := h.cfgRepo.Get(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
@@ -95,7 +95,7 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.cfgRepo.UpdateMap(updates); err != nil {
+	if err := h.cfgRepo.UpdateMap(c.Request.Context(), updates); err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}

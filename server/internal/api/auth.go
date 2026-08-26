@@ -1,193 +1,117 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"errors"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/caslus/jobmatcha/internal/model"
-	"github.com/caslus/jobmatcha/internal/repository"
+	"github.com/caslus/jobmatcha/internal/service"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
-const (
-	sessionDuration = 7 * 24 * time.Hour
-	tokenBytes      = 32
-	bcryptCost      = 12
-)
+const sessionCookie = "session"
 
 type AuthHandler struct {
-	cfgRepo *repository.ConfigRepo
-	db      *gorm.DB
+	auth         *service.AuthService
+	cookieSecure bool
 }
 
-func NewAuthHandler(cfgRepo *repository.ConfigRepo, db *gorm.DB) *AuthHandler {
-	return &AuthHandler{cfgRepo: cfgRepo, db: db}
+func NewAuthHandler(auth *service.AuthService, cookieSecure bool) *AuthHandler {
+	return &AuthHandler{auth: auth, cookieSecure: cookieSecure}
 }
 
-// POST /api/auth/login
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
-	c.BindJSON(&req)
-
-	if req.Password == "" {
+	if err := c.ShouldBindJSON(&req); err != nil || req.Password == "" {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Password is required."})
 		return
 	}
-
-	cfg, err := h.cfgRepo.Get()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(cfg.PasswordHash), []byte(req.Password)); err != nil {
+	token, err := h.auth.Login(c.Request.Context(), req.Password)
+	if errors.Is(err, service.ErrInvalidCredentials) {
 		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Invalid password."})
 		return
 	}
-
-	token, err := h.createSession()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
-
-	setSessionCookie(c, token)
-	c.JSON(http.StatusOK, model.AuthTokenResponse{Token: token})
+	setSessionCookie(c, token, h.cookieSecure)
+	c.JSON(http.StatusOK, model.AuthLoginResponse{Authenticated: true})
 }
 
-// POST /api/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
-	token := extractToken(c)
-	if token != "" {
-		h.db.Where("token = ?", token).Delete(&model.Session{})
+	if err := h.auth.Logout(c.Request.Context(), sessionToken(c)); err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
+		return
 	}
-	clearSessionCookie(c)
+	clearSessionCookie(c, h.cookieSecure)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// GET /api/auth/status
+// Status is public so the SPA can determine its route before authentication.
 func (h *AuthHandler) Status(c *gin.Context) {
-	cfg, err := h.cfgRepo.Get()
+	resp, err := h.auth.Status(c.Request.Context(), sessionToken(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
-
-	token := extractToken(c)
-	authenticated := false
-	if token != "" {
-		var session model.Session
-		authenticated = h.db.Where("token = ? AND expires_at > ?", token, time.Now()).Find(&session).RowsAffected > 0
-	}
-
-	resp := model.AuthStatusResponse{
-		Authenticated: authenticated,
-		SetupComplete: cfg.SetupComplete,
-		OIDCEnabled:   cfg.OIDCEnabled,
-	}
-	if cfg.OIDCEnabled {
-		resp.OIDCProviderURL = cfg.OIDCProviderURL
-	}
-
 	c.JSON(http.StatusOK, resp)
 }
 
-// POST /api/auth/change-password
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	var req model.ChangePasswordRequest
-	c.BindJSON(&req)
-
-	if req.CurrentPassword == "" || req.NewPassword == "" {
+	if err := c.ShouldBindJSON(&req); err != nil || req.CurrentPassword == "" || req.NewPassword == "" {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Both passwords are required."})
 		return
 	}
-
-	cfg, err := h.cfgRepo.Get()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(cfg.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+	if err := h.auth.ChangePassword(c.Request.Context(), req.CurrentPassword, req.NewPassword); errors.Is(err, service.ErrInvalidCredentials) {
 		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Current password is incorrect."})
 		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcryptCost)
-	if err != nil {
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
 	}
-
-	if err := h.cfgRepo.UpdateMap(map[string]interface{}{
-		"password_hash": string(hash),
-	}); err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
-		return
-	}
-
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (h *AuthHandler) createSession() (string, error) {
-	buf := make([]byte, tokenBytes)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
+func sessionToken(c *gin.Context) string {
+	token, err := c.Cookie(sessionCookie)
+	if err != nil {
+		return ""
 	}
-	token := hex.EncodeToString(buf)
-
-	session := model.Session{
-		Token:     token,
-		ExpiresAt: time.Now().Add(sessionDuration),
-	}
-	if err := h.db.Create(&session).Error; err != nil {
-		return "", err
-	}
-	return token, nil
+	return token
 }
 
-func extractToken(c *gin.Context) string {
-	// Try cookie first
-	token, err := c.Cookie("session")
-	if err == nil && token != "" {
-		return token
-	}
-	// Fallback to Authorization: Bearer
-	auth := c.GetHeader("Authorization")
-	if len(auth) > 7 && auth[:7] == "Bearer " {
-		return auth[7:]
-	}
-	return ""
+func setSessionCookie(c *gin.Context, token string, secure bool) {
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie(sessionCookie, token, int(service.SessionDuration.Seconds()), "/", "", secure, true)
 }
 
-func setSessionCookie(c *gin.Context, token string) {
-	c.SetCookie("session", token, int(sessionDuration.Seconds()), "/", "", false, true)
+func clearSessionCookie(c *gin.Context, secure bool) {
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie(sessionCookie, "", -1, "/", "", secure, true)
 }
 
-func clearSessionCookie(c *gin.Context) {
-	c.SetCookie("session", "", -1, "/", "", false, true)
-}
-
-// Authenticated returns the auth middleware.
-func Authenticated(db *gorm.DB) gin.HandlerFunc {
+func Authenticated(auth *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := extractToken(c)
-		if token == "" {
+		valid, err := auth.Authenticate(c.Request.Context(), sessionToken(c))
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
+			return
+		}
+		if !valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Not authenticated."})
 			return
 		}
-
-		var session model.Session
-		result := db.Where("token = ? AND expires_at > ?", token, time.Now()).Find(&session)
-		if result.RowsAffected == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Error: "Not authenticated."})
-			return
-		}
-
 		c.Next()
 	}
+}
+
+func CookieSecureFromEnv(value string) bool {
+	if value == "" {
+		return true
+	}
+	secure, err := strconv.ParseBool(value)
+	return err != nil || secure
 }

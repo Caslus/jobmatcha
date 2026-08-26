@@ -4,7 +4,7 @@ import "time"
 
 type Session struct {
 	ID        uint      `gorm:"primaryKey" json:"-"`
-	Token     string    `gorm:"uniqueIndex;not null;size:128" json:"-"`
+	TokenHash string    `gorm:"uniqueIndex;not null;size:64" json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"-"`
 }
