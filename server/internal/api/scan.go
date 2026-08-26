@@ -10,10 +10,10 @@ import (
 )
 
 type ScanHandler struct {
-	svc *service.ScannerService
+	svc service.Scanner
 }
 
-func NewScanHandler(svc *service.ScannerService) *ScanHandler {
+func NewScanHandler(svc service.Scanner) *ScanHandler {
 	return &ScanHandler{svc: svc}
 }
 

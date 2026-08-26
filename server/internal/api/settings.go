@@ -13,10 +13,10 @@ import (
 
 type SettingsHandler struct {
 	cfgRepo   *repository.ConfigRepo
-	scheduler *service.SchedulerService
+	scheduler service.Scheduler
 }
 
-func NewSettingsHandler(cfgRepo *repository.ConfigRepo, scheduler *service.SchedulerService) *SettingsHandler {
+func NewSettingsHandler(cfgRepo *repository.ConfigRepo, scheduler service.Scheduler) *SettingsHandler {
 	return &SettingsHandler{cfgRepo: cfgRepo, scheduler: scheduler}
 }
 

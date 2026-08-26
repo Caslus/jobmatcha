@@ -20,8 +20,8 @@ type ResumeHandler struct {
 	service *service.ResumeService
 }
 
-func NewResumeHandler(repos *repository.Repositories) *ResumeHandler {
-	return &ResumeHandler{service: service.NewResumeService(repos)}
+func NewResumeHandler(repos *repository.Repositories, aiClient service.AIClient) *ResumeHandler {
+	return &ResumeHandler{service: service.NewResumeServiceWithAI(repos, aiClient)}
 }
 
 // POST /api/ai/parse-resume
