@@ -24,3 +24,4 @@ COOKIE_SECURE = "false"
 "[Server] Run API tests" = { run = "cd server && go test ./internal/api/ -v -count=1" }
 "[Server] Run all tests" = { run = "cd server && go test ./...", description = "Run the full backend test suite" }
 "[Server] Run coverage" = { run = "cd server && go test ./... -covermode=atomic -coverpkg=./... -coverprofile=coverage.out && go tool cover -func=coverage.out && go tool cover -html=coverage.out -o coverage.html", description = "Run Go tests with coverage reports" }
+"[Coverage] Gate" = { run = "mise run \"[Server] Run coverage\" && mise run \"[Web] Run coverage\" && node scripts/check-coverage.mjs", description = "Enforce maintained application coverage thresholds" }

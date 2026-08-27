@@ -17,8 +17,20 @@ export default defineConfig({
 		include: ["src/**/*.test.{ts,tsx}"],
 		coverage: {
 			provider: "v8",
-			reporter: ["text", "html"],
-			exclude: ["src/types/api.gen.ts", "src/routeTree.gen.ts", "src/test/**", "*.config.*"],
+			all: true,
+			reporter: ["text", "html", "lcov", "json-summary"],
+			include: ["src/**/*.{ts,tsx}"],
+			exclude: [
+				"src/**/*.test.{ts,tsx}",
+				"src/test/**",
+				"src/types/api.gen.ts",
+				"src/routeTree.gen.ts",
+				"src/router.tsx",
+				"src/integrations/tanstack-query/devtools.tsx",
+				"*.config.*",
+			],
 		},
+		pool: "threads",
+		maxWorkers: 1,
 	},
 });

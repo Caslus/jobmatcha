@@ -22,10 +22,9 @@ jobs:
           key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
-      - run: mise run "[Server] Run coverage"
       - run: mise run "[Web] Check"
       - run: mise run "[Web] Typecheck"
-      - run: mise run "[Web] Run coverage"
+      - run: mise run "[Coverage] Gate"
       - run: mise run "[Web] Build"
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
