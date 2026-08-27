@@ -12,15 +12,15 @@ import (
 )
 
 type workableJob struct {
-	Title        string `json:"title"`
-	Shortcode    string `json:"shortcode"`
-	URL          string `json:"url"`
-	Department   string `json:"department"`
-	PublishedOn  string `json:"published_on"`
-	Description  string `json:"description"`
-	Telecommuting bool `json:"telecommuting"`
-	CreatedAt    string `json:"created_at"`
-	Locations    []struct {
+	Title         string `json:"title"`
+	Shortcode     string `json:"shortcode"`
+	URL           string `json:"url"`
+	Department    string `json:"department"`
+	PublishedOn   string `json:"published_on"`
+	Description   string `json:"description"`
+	Telecommuting bool   `json:"telecommuting"`
+	CreatedAt     string `json:"created_at"`
+	Locations     []struct {
 		City    string `json:"city"`
 		Region  string `json:"region"`
 		Country string `json:"country"`
@@ -83,8 +83,7 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 		// Merge locations for duplicate shortcodes
 		if existing, ok := byURL[uid]; ok {
 			for _, loc := range j.Locations {
-				parts := strings.TrimSpace(strings.Join([]string{loc.City, loc.Region, loc.Country}, ", "))
-				parts = strings.Trim(parts, ", ")
+				parts := formatWorkableLocation(loc.City, loc.Region, loc.Country)
 				if parts != "" {
 					found := false
 					for _, lp := range existing.locParts {
@@ -98,13 +97,13 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 					}
 				}
 			}
+			existing.role.Location = strings.Join(existing.locParts, "; ")
 			continue
 		}
 
 		var locParts []string
 		for _, loc := range j.Locations {
-			parts := strings.TrimSpace(strings.Join([]string{loc.City, loc.Region, loc.Country}, ", "))
-			parts = strings.Trim(parts, ", ")
+			parts := formatWorkableLocation(loc.City, loc.Region, loc.Country)
 			if parts != "" {
 				locParts = append(locParts, parts)
 			}
@@ -152,4 +151,14 @@ func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.
 		roles = append(roles, wr.role)
 	}
 	return roles, nil
+}
+
+func formatWorkableLocation(city, region, country string) string {
+	parts := make([]string, 0, 3)
+	for _, part := range []string{city, region, country} {
+		if part = strings.TrimSpace(part); part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return strings.Join(parts, ", ")
 }
