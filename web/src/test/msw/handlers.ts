@@ -10,7 +10,9 @@ import type {
 } from "../../types/api.gen";
 import { fixtures } from "./fixtures";
 
-const apiPath = (path: string) => `*/api/${path}`;
+// Ky resolves the same-origin API base differently in jsdom and the browser;
+// this wildcard intentionally accepts both `/api/...` and absolute test URLs.
+const apiPath = (path: string) => `*/${path}`;
 
 export const apiHandlers = {
 	authStatus: (response: AuthStatusResponse = fixtures.authStatus) =>
