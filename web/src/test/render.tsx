@@ -79,6 +79,11 @@ export function renderWithRouter(
 		user: userEvent.setup(),
 		queryClient,
 		router,
-		...render(<RouterProvider router={router} />, options),
+		...render(
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>,
+			options,
+		),
 	};
 }
