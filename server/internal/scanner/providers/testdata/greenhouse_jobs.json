@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "id": 123,
+      "title": "  Staff Platform Engineer  ",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/123",
+      "content": "<p>Build the platform.</p>",
+      "updated_at": "2026-08-20T10:30:00Z",
+      "location": { "name": "Remote, Brazil" },
+      "departments": [{ "name": "Engineering" }]
+    },
+    {
+      "id": 124,
+      "title": "Product Manager",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/124",
+      "content": "<p>Own the roadmap.</p>",
+      "updated_at": "not-a-date",
+      "departments": []
+    }
+  ]
+}
