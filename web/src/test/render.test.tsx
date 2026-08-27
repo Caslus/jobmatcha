@@ -28,7 +28,9 @@ it("renders with an isolated query client and user interaction", async () => {
 });
 
 function RouteLocation() {
-	const pathname = useRouterState({ select: (state) => state.location.pathname });
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	});
 	return <p>Route: {pathname}</p>;
 }
 

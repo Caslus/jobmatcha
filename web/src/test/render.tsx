@@ -34,7 +34,10 @@ export function createTestQueryClient() {
 
 export function renderWithProviders(
 	ui: ReactElement,
-	{ queryClient = createTestQueryClient(), ...options }: ProviderRenderOptions = {},
+	{
+		queryClient = createTestQueryClient(),
+		...options
+	}: ProviderRenderOptions = {},
 ) {
 	return {
 		user: userEvent.setup(),
