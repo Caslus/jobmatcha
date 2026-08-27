@@ -26,10 +26,18 @@ export const apiHandlers = {
 		http.get(apiPath("roles"), () => HttpResponse.json(response)),
 	role: (response: RoleDetailResponse = fixtures.roleDetail) =>
 		http.get(apiPath("roles/:id"), () => HttpResponse.json(response)),
+	patchRole: () =>
+		http.patch(apiPath("roles/:id"), () => HttpResponse.json({})),
+	tailoredResume: () =>
+		http.get(apiPath("roles/:id/tailored-resume"), () => HttpResponse.json(null)),
+	tailorRole: () =>
+		http.post(apiPath("roles/:id/tailor"), () => HttpResponse.json({})),
 	settings: (response: SettingsResponse = fixtures.settings) =>
 		http.get(apiPath("settings"), () => HttpResponse.json(response)),
 	scanLatest: (response: ScanJobResponse = fixtures.scanJob) =>
 		http.get(apiPath("scan/latest"), () => HttpResponse.json(response)),
+	scan: (response: ScanJobResponse = fixtures.scanJob) =>
+		http.get(apiPath("scan/:id"), () => HttpResponse.json(response)),
 	aiSettings: (response: AIInfoResponse = fixtures.aiSettings) =>
 		http.get(apiPath("settings/ai"), () => HttpResponse.json(response)),
 	validateKey: (valid = true) =>

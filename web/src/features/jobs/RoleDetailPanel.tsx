@@ -87,6 +87,7 @@ export function RoleDetailPanel({ selectedId, onBack }: RoleDetailPanelProps) {
 						<button
 							type="button"
 							onClick={onBack}
+							aria-label="Close role details"
 							className="rounded-lg p-1 text-[#6a7a6a] transition hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
 						>
 							<X size={16} />
