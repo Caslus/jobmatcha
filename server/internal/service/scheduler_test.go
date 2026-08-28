@@ -35,6 +35,36 @@ func TestSchedulerRegistersAndRemovesConfiguredJob(t *testing.T) {
 	}
 }
 
+func TestSchedulerDoesNotReloadBeforeStartOrAfterStop(t *testing.T) {
+	db := testutil.Database(t)
+	repos := testutil.Repositories(db)
+	ctx := context.Background()
+	if err := repos.Config.Create(ctx, &model.Config{ID: 1, ScanEnabled: false, ScanCronExpr: "0 * * * *", ScanTimezone: "UTC"}); err != nil {
+		t.Fatalf("config: %v", err)
+	}
+
+	service := NewSchedulerService(repos.Config, &schedulerScannerFake{})
+	service.ReloadSchedule()
+	if service.IsEnabled() || service.NextRun() != nil {
+		t.Fatal("reload before start registered a job")
+	}
+
+	service.Start()
+	if service.IsEnabled() || service.NextRun() != nil {
+		t.Fatal("disabled schedule registered a job")
+	}
+	service.Stop()
+	service.Stop() // Stopping an already stopped scheduler must be safe.
+
+	if err := repos.Config.UpdateMap(ctx, map[string]interface{}{"scan_enabled": true}); err != nil {
+		t.Fatalf("enable: %v", err)
+	}
+	service.ReloadSchedule()
+	if service.IsEnabled() || service.NextRun() != nil {
+		t.Fatal("reload after stop restarted the scheduler")
+	}
+}
+
 func TestParseLocationFallsBackToUTC(t *testing.T) {
 	if got := parseLocation("not/a/timezone"); got.String() != "UTC" {
 		t.Fatalf("fallback = %s", got)
