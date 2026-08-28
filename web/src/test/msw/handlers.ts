@@ -29,7 +29,9 @@ export const apiHandlers = {
 	patchRole: () =>
 		http.patch(apiPath("roles/:id"), () => HttpResponse.json({})),
 	tailoredResume: () =>
-		http.get(apiPath("roles/:id/tailored-resume"), () => HttpResponse.json(null)),
+		http.get(apiPath("roles/:id/tailored-resume"), () =>
+			HttpResponse.json(null),
+		),
 	tailorRole: () =>
 		http.post(apiPath("roles/:id/tailor"), () => HttpResponse.json({})),
 	settings: (response: SettingsResponse = fixtures.settings) =>
