@@ -115,7 +115,7 @@ export const Route = createFileRoute("/dashboard")({
 
 // ── Dashboard Page ─────────────────────────────────
 
-function DashboardPage() {
+export function DashboardPage() {
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const init = loadState();

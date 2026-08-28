@@ -184,9 +184,107 @@ func TestAuthBootstrapAndCookieSession(t *testing.T) {
 }
 
 func TestCookieSecureDefaults(t *testing.T) {
-	if !CookieSecureFromEnv("") || CookieSecureFromEnv("false") {
+	if !CookieSecureFromEnv("") || CookieSecureFromEnv("false") || !CookieSecureFromEnv("true") || !CookieSecureFromEnv("not-a-bool") {
 		t.Fatal("unexpected cookie secure configuration")
 	}
+}
+
+func TestAuthHandlerValidationAndFailureResponses(t *testing.T) {
+	t.Run("login validation and invalid credentials", func(t *testing.T) {
+		db := setupTestDB(t)
+		router, _ := setupTestRouter(t, db, false)
+
+		for _, body := range []string{"", `{}`, `{"password":`} {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			router.ServeHTTP(w, req)
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("login body %q = %d, want %d", body, w.Code, http.StatusBadRequest)
+			}
+		}
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(`{"password":"wrong"}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("invalid login = %d, want %d", w.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("change password validation and invalid credentials", func(t *testing.T) {
+		db := setupTestDB(t)
+		router, secretFile := setupTestRouter(t, db, false)
+		cookie := login(t, router, bootstrapPassword(t, secretFile))
+
+		for _, body := range []string{"", `{}`, `{"current_password":"current"}`, `{"current_password":`} {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(cookie)
+			router.ServeHTTP(w, req)
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("change password body %q = %d, want %d", body, w.Code, http.StatusBadRequest)
+			}
+		}
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", strings.NewReader(`{"current_password":"wrong","new_password":"next"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(cookie)
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("invalid current password = %d, want %d", w.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("database failures return internal errors", func(t *testing.T) {
+		db := setupTestDB(t)
+		router, _ := setupTestRouter(t, db, false)
+		sqlDB, err := db.DB()
+		if err != nil {
+			t.Fatalf("get sql database: %v", err)
+		}
+		if err := sqlDB.Close(); err != nil {
+			t.Fatalf("close sql database: %v", err)
+		}
+
+		requests := []struct {
+			method string
+			path   string
+			body   string
+			cookie bool
+		}{
+			{method: http.MethodPost, path: "/api/auth/login", body: `{"password":"password"}`},
+			{method: http.MethodPost, path: "/api/auth/logout", cookie: true},
+			{method: http.MethodGet, path: "/api/auth/status", cookie: true},
+			{method: http.MethodGet, path: "/api/settings", cookie: true},
+		}
+		for _, tc := range requests {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+			if tc.body != "" {
+				req.Header.Set("Content-Type", "application/json")
+			}
+			if tc.cookie {
+				req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "token"})
+			}
+			router.ServeHTTP(w, req)
+			if w.Code != http.StatusInternalServerError {
+				t.Fatalf("%s %s = %d, want %d", tc.method, tc.path, w.Code, http.StatusInternalServerError)
+			}
+		}
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/auth/change-password", strings.NewReader(`{"current_password":"password","new_password":"next"}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		NewAuthHandler(service.NewAuthService(repository.NewRepositories(db), ""), false).ChangePassword(c)
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("direct change password = %d, want %d", w.Code, http.StatusInternalServerError)
+		}
+	})
 }
 
 func TestHealthEndpoint(t *testing.T) {
