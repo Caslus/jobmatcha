@@ -52,4 +52,39 @@ func TestRolesContractRequiresAuthenticationAndPersistsPreferences(t *testing.T)
 	if len(response.Data) != 1 || !response.Data[0].IsInterested || response.Data[0].Title != role.Title {
 		t.Fatalf("unexpected role response: %#v", response)
 	}
+
+	t.Run("detail handles invalid and missing IDs", func(t *testing.T) {
+		for _, path := range []string{"/api/roles/not-a-number", "/api/roles/9999"} {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+			router.ServeHTTP(w, req)
+			if path == "/api/roles/not-a-number" && w.Code != http.StatusBadRequest {
+				t.Fatalf("invalid detail status = %d", w.Code)
+			}
+			if path == "/api/roles/9999" && w.Code != http.StatusNotFound {
+				t.Fatalf("missing detail status = %d", w.Code)
+			}
+		}
+	})
+
+	t.Run("detail includes scored match analysis", func(t *testing.T) {
+		if err := db.Model(&model.Config{}).Where("id = 1").Updates(map[string]interface{}{
+			"include_keywords": model.StringSlice{"go", "engineer"},
+		}).Error; err != nil {
+			t.Fatalf("set relevance config: %v", err)
+		}
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/roles/1", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("detail status = %d: %s", w.Code, w.Body.String())
+		}
+		var response model.RoleDetailResponse
+		parseJSON(t, w.Body.String(), &response)
+		if response.Title != role.Title || response.CompanyName != company.Name || response.MatchDetails == nil || response.MatchPercent <= 0 {
+			t.Fatalf("unexpected role detail: %#v", response)
+		}
+	})
 }
