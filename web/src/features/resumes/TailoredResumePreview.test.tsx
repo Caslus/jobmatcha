@@ -35,6 +35,13 @@ describe("TailoredResumePreview", () => {
 
 	it("renders a structured document, saves appearance choices, and exports it", async () => {
 		const onClose = vi.fn();
+		const appearanceStorage = new Map<string, string>();
+		vi.stubGlobal("localStorage", {
+			getItem: (key: string) => appearanceStorage.get(key) ?? null,
+			setItem: (key: string, value: string) =>
+				appearanceStorage.set(key, value),
+			removeItem: (key: string) => appearanceStorage.delete(key),
+		});
 		const write = vi.fn();
 		const close = vi.fn();
 		const printWindow = {
