@@ -1,13 +1,112 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/caslus/jobmatcha/internal/model"
+	"github.com/caslus/jobmatcha/internal/repository"
+	"github.com/caslus/jobmatcha/internal/service"
+	"github.com/caslus/jobmatcha/internal/testutil"
+	"github.com/gin-gonic/gin"
 )
+
+type settingsSchedulerFake struct {
+	reloads int
+	nextRun *time.Time
+}
+
+func (f *settingsSchedulerFake) Start()          {}
+func (f *settingsSchedulerFake) Stop()           {}
+func (f *settingsSchedulerFake) ReloadSchedule() { f.reloads++ }
+func (f *settingsSchedulerFake) IsEnabled() bool { return false }
+func (f *settingsSchedulerFake) NextRun() *time.Time {
+	return f.nextRun
+}
+
+var _ service.Scheduler = (*settingsSchedulerFake)(nil)
+
+func setupSettingsHandler(t *testing.T) (*SettingsHandler, *repository.ConfigRepo, *settingsSchedulerFake) {
+	t.Helper()
+	db := testutil.Database(t)
+	repo := repository.NewConfigRepo(db)
+	if err := repo.Create(context.Background(), &model.Config{ID: 1}); err != nil {
+		t.Fatalf("create config: %v", err)
+	}
+	scheduler := &settingsSchedulerFake{}
+	return NewSettingsHandler(repo, scheduler), repo, scheduler
+}
+
+func updateSettings(t *testing.T, handler *SettingsHandler, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.PUT("/settings", handler.Update)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(recorder, request)
+	return recorder
+}
+
+func TestSettingsHandlerValidatesAndReloadsScanSchedule(t *testing.T) {
+	handler, repo, scheduler := setupSettingsHandler(t)
+
+	t.Run("invalid cron does not persist or reload", func(t *testing.T) {
+		response := updateSettings(t, handler, `{"scan_cron_expr":"not a cron"}`)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d: %s", response.Code, response.Body.String())
+		}
+		if !strings.Contains(response.Body.String(), "Invalid cron expression:") {
+			t.Errorf("unexpected error: %s", response.Body.String())
+		}
+		config, err := repo.Get(context.Background())
+		if err != nil {
+			t.Fatalf("get config: %v", err)
+		}
+		if config.ScanCronExpr != "0 */6 * * *" || scheduler.reloads != 0 {
+			t.Errorf("invalid cron changed schedule: config=%+v reloads=%d", config, scheduler.reloads)
+		}
+	})
+
+	t.Run("invalid timezone does not persist or reload", func(t *testing.T) {
+		response := updateSettings(t, handler, `{"scan_timezone":"Mars/Olympus"}`)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d: %s", response.Code, response.Body.String())
+		}
+		if !strings.Contains(response.Body.String(), "Invalid timezone:") {
+			t.Errorf("unexpected error: %s", response.Body.String())
+		}
+		config, err := repo.Get(context.Background())
+		if err != nil {
+			t.Fatalf("get config: %v", err)
+		}
+		if config.ScanTimezone != "UTC" || scheduler.reloads != 0 {
+			t.Errorf("invalid timezone changed schedule: config=%+v reloads=%d", config, scheduler.reloads)
+		}
+	})
+
+	t.Run("valid schedule persists and reloads", func(t *testing.T) {
+		response := updateSettings(t, handler, `{"scan_enabled":true,"scan_cron_expr":"15 9 * * 1-5","scan_timezone":"America/Sao_Paulo"}`)
+		if response.Code != http.StatusOK {
+			t.Fatalf("status = %d: %s", response.Code, response.Body.String())
+		}
+		if scheduler.reloads != 1 {
+			t.Fatalf("reloads = %d, want 1", scheduler.reloads)
+		}
+		config, err := repo.Get(context.Background())
+		if err != nil {
+			t.Fatalf("get config: %v", err)
+		}
+		if !config.ScanEnabled || config.ScanCronExpr != "15 9 * * 1-5" || config.ScanTimezone != "America/Sao_Paulo" {
+			t.Errorf("saved scan schedule = %+v", config)
+		}
+	})
+}
 
 func TestSettingsAPI(t *testing.T) {
 	db := setupTestDB(t)
