@@ -15,7 +15,7 @@ const context = {
 
 describe("Particles", () => {
 	let animationFrame: FrameRequestCallback | undefined;
-	let cancelAnimationFrame: ReturnType<typeof vi.fn>;
+	let cancelledFrames: number[];
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -44,9 +44,9 @@ describe("Particles", () => {
 			animationFrame = callback;
 			return 42;
 		});
-		cancelAnimationFrame = vi.fn();
-		vi.spyOn(window, "cancelAnimationFrame").mockImplementation(
-			cancelAnimationFrame,
+		cancelledFrames = [];
+		vi.spyOn(window, "cancelAnimationFrame").mockImplementation((handle) =>
+			cancelledFrames.push(handle),
 		);
 	});
 
@@ -100,7 +100,7 @@ describe("Particles", () => {
 		expect(context.arc).toHaveBeenCalled();
 		expect(context.fillStyle).toMatch(/^rgba\(255, 0, 0, /);
 		unmount();
-		expect(cancelAnimationFrame).toHaveBeenCalledWith(42);
+		expect(cancelledFrames).toContain(42);
 		vi.useRealTimers();
 	});
 });
