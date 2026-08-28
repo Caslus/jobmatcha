@@ -43,4 +43,12 @@ func TestScannerServiceCreatesAndReadsJobs(t *testing.T) {
 	if job.Status != "completed" {
 		t.Fatalf("scan did not complete: %#v", job)
 	}
+	latest, err := svc.GetLatestJob()
+	if err != nil || latest == nil || latest.ID != id {
+		t.Fatalf("latest job = %#v, %v", latest, err)
+	}
+	missing, err := svc.GetJob(id + 1000)
+	if err != nil || missing != nil {
+		t.Fatalf("missing job = %#v, %v", missing, err)
+	}
 }
