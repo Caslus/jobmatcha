@@ -33,7 +33,7 @@ func TestTimeAgoAndKeywordBoundaries(t *testing.T) {
 	for _, tc := range []struct {
 		age  time.Duration
 		want string
-	}{{time.Minute, "1m ago"}, {2 * time.Minute, "2m ago"}, {time.Hour, "1h ago"}, {2 * time.Hour, "2h ago"}, {24 * time.Hour, "1d ago"}, {8 * 24 * time.Hour, "1w ago"}, {400 * 24 * time.Hour, "1y ago"}} {
+	}{{time.Minute, "1m ago"}, {2 * time.Minute, "2m ago"}, {time.Hour, "1h ago"}, {2 * time.Hour, "2h ago"}, {24 * time.Hour, "1d ago"}, {31 * 24 * time.Hour, "4w ago"}, {400 * 24 * time.Hour, "1y ago"}} {
 		then := now.Add(-tc.age)
 		if got := TimeAgo(&then); got != tc.want {
 			t.Errorf("TimeAgo(%s) = %q, want %q", tc.age, got, tc.want)
