@@ -1,7 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test/render";
-import { ToggleSwitch } from "./ToggleSwitch";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
@@ -18,6 +17,7 @@ import {
 } from "./select";
 import { Slider } from "./slider";
 import { Switch } from "./switch";
+import { ToggleSwitch } from "./ToggleSwitch";
 import { Textarea } from "./textarea";
 
 describe("shared UI primitives", () => {
