@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a focused improvement to the job-search experience.
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What job-search problem are you trying to solve?
+      description: Start with the outcome rather than a particular implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: Describe how Jobmatcha should help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What are you doing today, and where does it fall short?

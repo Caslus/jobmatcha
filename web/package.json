@@ -14,7 +14,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "capture-readme-screenshots": "node scripts/capture-readme-screenshots.mjs"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",

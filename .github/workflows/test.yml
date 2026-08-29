@@ -8,6 +8,30 @@ permissions:
   contents: read
 
 jobs:
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: docker build --tag jobmatcha:test .
+      - name: Start application
+        run: |
+          docker volume create jobmatcha-test-data
+          docker run --detach --name jobmatcha-test --publish 8181:8181 --volume jobmatcha-test-data:/data jobmatcha:test
+      - name: Verify API and SPA
+        run: |
+          for attempt in {1..20}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8181/api/health | grep -q '"status":"ok"'; then
+              curl --fail --silent --show-error http://127.0.0.1:8181/ | grep -q '<!doctype html>'
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs jobmatcha-test
+          exit 1
+      - if: always()
+        run: |
+          docker rm --force jobmatcha-test || true
+          docker volume rm jobmatcha-test-data || true
   unit:
     runs-on: ubuntu-latest
     steps:
@@ -19,14 +43,16 @@ jobs:
             ~/.cache/mise
             ~/.local/share/mise
             ~/.cache/pnpm
-          key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml', 'docs/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
+      - run: pnpm --dir docs install --frozen-lockfile
       - run: mise run "[Server] Run coverage"
       - run: mise run "[Web] Check"
       - run: mise run "[Web] Typecheck"
       - run: mise run "[Web] Run coverage"
       - run: mise run "[Web] Build"
+      - run: mise run "[Docs] Build"
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: coverage

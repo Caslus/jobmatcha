@@ -87,10 +87,10 @@ export function RoleList({ selectedId, onSelect }: RoleListProps) {
 								<button
 									type="button"
 									onClick={() => onSelect(role.id)}
-									className="flex-1 text-left"
+									className="min-w-0 flex-1 text-left"
 								>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium text-[#e8e8e8]">
+										<p className="line-clamp-2 break-words text-sm leading-5 font-medium text-[#e8e8e8]">
 											{role.title}
 										</p>
 										<p className="mt-0.5 text-sm text-[#6a7a6a]">
