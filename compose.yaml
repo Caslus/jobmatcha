@@ -1,0 +1,15 @@
+services:
+  jobmatcha:
+    build:
+      context: .
+    ports:
+      - "8181:8181"
+    environment:
+      DB_PATH: /data/app.db
+      COOKIE_SECURE: "false"
+    volumes:
+      - jobmatcha-data:/data
+    restart: unless-stopped
+
+volumes:
+  jobmatcha-data:

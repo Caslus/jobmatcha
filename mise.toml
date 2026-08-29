@@ -18,6 +18,9 @@ COOKIE_SECURE = "false"
 "[Web] Run tests" = { run = "cd web && pnpm run test", description = "Run frontend unit tests" }
 "[Web] Run coverage" = { run = "cd web && pnpm run test:coverage", description = "Run frontend tests with V8 coverage" }
 "[Web] Run browser E2E tests" = { run = "mise run \"[Web] Build\" && cd web && pnpm exec playwright test", description = "Run Playwright against the production SPA build" }
+"[Web] Capture README screenshots" = { run = 'mise run "[Web] Build" && cd web && pnpm run capture-readme-screenshots', description = "Refresh README screenshots from the fictional browser fixture" }
+"[Docs] Run dev" = { run = "cd docs && pnpm run dev", description = "Run the Starlight documentation site" }
+"[Docs] Build" = { run = "cd docs && pnpm run build", env = { PNPM_CONFIG_STRICT_DEP_BUILDS = "false" }, description = "Validate and build the Starlight documentation site" }
 "[Server] Run dev" = { run = "cd server && air" }
 "[Server] Build" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
 "[Server] Generate DTOs" = { run = "cd server && tygo generate" }
