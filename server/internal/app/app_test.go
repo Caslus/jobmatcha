@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -85,4 +86,51 @@ func TestNewStartsSchedulerByDefault(t *testing.T) {
 	if scheduler.starts != 1 {
 		t.Fatalf("scheduler starts = %d, want 1", scheduler.starts)
 	}
+}
+
+func TestNewRejectsInvalidStartupConfiguration(t *testing.T) {
+	t.Run("requires a database path", func(t *testing.T) {
+		_, err := New(context.Background(), Options{})
+		if err == nil || err.Error() != "application database path is required" {
+			t.Fatalf("New error = %v", err)
+		}
+	})
+
+	t.Run("reports migration failure", func(t *testing.T) {
+		migrateErr := errors.New("migration failed")
+		_, err := New(context.Background(), Options{
+			DBPath:  filepath.Join(t.TempDir(), "app.db"),
+			Migrate: func(*gorm.DB) error { return migrateErr },
+		})
+		if !errors.Is(err, migrateErr) {
+			t.Fatalf("New error = %v, want migration error", err)
+		}
+	})
+
+	t.Run("reports seed failure", func(t *testing.T) {
+		seedErr := errors.New("seed failed")
+		_, err := New(context.Background(), Options{
+			DBPath:  filepath.Join(t.TempDir(), "app.db"),
+			Migrate: func(*gorm.DB) error { return nil },
+			SeedCompanies: func(*gorm.DB) error {
+				return seedErr
+			},
+		})
+		if !errors.Is(err, seedErr) {
+			t.Fatalf("New error = %v, want seed error", err)
+		}
+	})
+
+	t.Run("reports missing static frontend", func(t *testing.T) {
+		_, err := New(context.Background(), Options{
+			DBPath:           filepath.Join(t.TempDir(), "app.db"),
+			StaticDir:        t.TempDir(),
+			DisableScheduler: true,
+			NewScanner:       func(*gorm.DB, *repository.Repositories) service.Scanner { return fakeScanner{} },
+			NewScheduler:     func(*repository.ConfigRepo, service.Scanner) service.Scheduler { return &fakeScheduler{} },
+		})
+		if err == nil {
+			t.Fatal("New error = nil, want missing static frontend error")
+		}
+	})
 }

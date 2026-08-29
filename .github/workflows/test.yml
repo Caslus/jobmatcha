@@ -1,7 +1,6 @@
 name: Test
 
 on:
-  push:
   pull_request:
 
 permissions:
@@ -47,10 +46,9 @@ jobs:
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
       - run: pnpm --dir docs install --frozen-lockfile --config.strictDepBuilds=false
-      - run: mise run "[Server] Run coverage"
       - run: mise run "[Web] Check"
       - run: mise run "[Web] Typecheck"
-      - run: mise run "[Web] Run coverage"
+      - run: mise run "[Coverage] Gate"
       - run: mise run "[Web] Build"
       - run: mise run "[Docs] Build"
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808

@@ -1,0 +1,31 @@
+{
+  "name": "Acme",
+  "jobs": [
+    {
+      "title": "  Backend Engineer ",
+      "shortcode": "backend-engineer",
+      "url": "https://apply.workable.com/acme/j/backend-engineer/",
+      "department": "Engineering",
+      "published_on": "2026-08-21",
+      "description": "<p>Build <strong>reliable</strong> services.</p>",
+      "locations": [{ "city": "Sao Paulo", "region": "SP", "country": "Brazil" }]
+    },
+    {
+      "title": "Backend Engineer",
+      "shortcode": "backend-engineer",
+      "url": "https://apply.workable.com/acme/j/backend-engineer/",
+      "department": "Engineering",
+      "published_on": "2026-08-21",
+      "locations": [
+        { "city": "Lisbon", "region": "", "country": "Portugal" },
+        { "city": "Sao Paulo", "region": "SP", "country": "Brazil" }
+      ]
+    },
+    {
+      "title": "Missing URL",
+      "shortcode": "missing-url",
+      "url": "",
+      "description": "<p>This must be skipped.</p>"
+    }
+  ]
+}
