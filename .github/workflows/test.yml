@@ -46,7 +46,7 @@ jobs:
           key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml', 'docs/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
-      - run: pnpm --dir docs install --frozen-lockfile
+      - run: pnpm --dir docs install --frozen-lockfile --config.strictDepBuilds=false
       - run: mise run "[Server] Run coverage"
       - run: mise run "[Web] Check"
       - run: mise run "[Web] Typecheck"
