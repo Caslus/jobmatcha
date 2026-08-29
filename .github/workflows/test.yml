@@ -21,7 +21,7 @@ jobs:
         run: |
           for attempt in {1..20}; do
             if curl --fail --silent --show-error http://127.0.0.1:8181/api/health | grep -q '"status":"ok"'; then
-              curl --fail --silent --show-error http://127.0.0.1:8181/ | grep -q '<!doctype html>'
+              curl --fail --silent --show-error http://127.0.0.1:8181/ | grep -qi '<!doctype html>'
               exit 0
             fi
             sleep 1
