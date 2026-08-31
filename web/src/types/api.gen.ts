@@ -102,8 +102,43 @@ export interface Company {
   location: string;
   active: boolean;
   last_scanned_at?: any /* time.Time */;
+  last_scan_attempt_at?: any /* time.Time */;
+  last_successful_scan_at?: any /* time.Time */;
+  last_scan_failure_detail?: string;
+  last_new_role_discovery_at?: any /* time.Time */;
   created_at: any /* time.Time */;
   updated_at: any /* time.Time */;
+}
+
+//////////
+// source: company_response.go
+
+/**
+ * CompanyListItem is the management view of one registered job source.
+ */
+export interface CompanyListItem {
+  id: number /* uint */;
+  name: string;
+  location: string;
+  ats_type: string;
+  active: boolean;
+  role_count: number /* int64 */;
+  adapter_status: string;
+  freshness_status: string;
+  last_scan_attempt_at?: any /* time.Time */;
+  last_successful_scan_at?: any /* time.Time */;
+  last_scan_failure_detail?: string;
+  last_new_role_discovery_at?: any /* time.Time */;
+}
+export interface CompanyListResponse {
+  data: CompanyListItem[];
+}
+export interface CompanyActiveUpdateRequest {
+  active?: boolean;
+}
+export interface CompanyBulkActiveUpdateRequest {
+  company_ids: number /* uint */[];
+  active?: boolean;
 }
 
 //////////

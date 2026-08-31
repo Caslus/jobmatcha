@@ -7,6 +7,10 @@ import type {
 	AuthLoginResponse,
 	AuthStatusResponse,
 	ChangePasswordRequest,
+	CompanyActiveUpdateRequest,
+	CompanyBulkActiveUpdateRequest,
+	CompanyListItem,
+	CompanyListResponse,
 	ErrorResponse,
 	OnboardingCompleteRequest,
 	ParseResumeResponse,
@@ -84,6 +88,14 @@ export const rolesApi = {
 		api
 			.get(`roles/${id}/tailored-resume`)
 			.json<TailoredResumeResponse | null>(),
+};
+
+export const companiesApi = {
+	list: () => api.get("companies").json<CompanyListResponse>(),
+	updateActive: (id: number, data: CompanyActiveUpdateRequest) =>
+		api.patch(`companies/${id}`, { json: data }).json<CompanyListItem>(),
+	updateActiveBulk: (data: CompanyBulkActiveUpdateRequest) =>
+		api.put("companies/active", { json: data }).json<CompanyListResponse>(),
 };
 
 // Settings

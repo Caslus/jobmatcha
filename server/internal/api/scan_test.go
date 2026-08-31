@@ -20,6 +20,7 @@ type scanFake struct {
 func (f scanFake) StartScan() (uint, error)                      { return f.startID, f.startErr }
 func (f scanFake) GetJob(uint) (*model.ScanJobResponse, error)   { return f.job, f.getErr }
 func (f scanFake) GetLatestJob() (*model.ScanJobResponse, error) { return f.job, f.getErr }
+func (scanFake) SupportsAdapter(string) bool                     { return false }
 
 func TestScanHandlerMapsServiceOutcomesToHTTP(t *testing.T) {
 	gin.SetMode(gin.TestMode)

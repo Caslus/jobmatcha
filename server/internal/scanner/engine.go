@@ -49,6 +49,11 @@ func (e *Engine) registerBuiltinProviders() {
 	}
 }
 
+// SupportsAdapter reports whether this engine has a provider for the adapter.
+func (e *Engine) SupportsAdapter(atsType string) bool {
+	return e.Registry.Has(atsType)
+}
+
 // ScanResult summarizes a single company scan.
 type ScanResult struct {
 	CompanyName string `json:"company_name"`
@@ -96,6 +101,10 @@ func (e *Engine) ScanAll(ctx context.Context) []ScanResult {
 // scanCompany fetches roles for a single company via its provider and upserts them.
 func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanResult {
 	result := ScanResult{CompanyName: company.Name}
+	attemptedAt := time.Now().UTC()
+	if err := e.Repos.Company.RecordScanAttempt(company.ID, attemptedAt); err != nil {
+		slog.Error("scanner: record attempt", "company", company.Name, "error", err)
+	}
 
 	// Resolve provider by ATS type
 	atsType := company.ATSType
@@ -106,6 +115,9 @@ func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanRe
 	provider, ok := e.Registry.Get(atsType)
 	if !ok {
 		result.Error = fmt.Sprintf("no provider for ats_type=%q", atsType)
+		if err := e.Repos.Company.RecordScanFailure(company.ID, result.Error); err != nil {
+			slog.Error("scanner: record provider failure", "company", company.Name, "error", err)
+		}
 		return result
 	}
 
@@ -113,12 +125,14 @@ func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanRe
 	roles, err := provider.Fetch(ctx, company)
 	if err != nil {
 		result.Error = err.Error()
+		if recordErr := e.Repos.Company.RecordScanFailure(company.ID, result.Error); recordErr != nil {
+			slog.Error("scanner: record fetch failure", "company", company.Name, "error", recordErr)
+		}
 		return result
 	}
 
-	if len(roles) == 0 {
-		result.Error = "no jobs found"
-		return result
+	if err := e.Repos.Company.RecordScanSuccess(company.ID, attemptedAt); err != nil {
+		slog.Error("scanner: record success", "company", company.Name, "error", err)
 	}
 
 	// Upsert roles — count new vs existing
@@ -150,9 +164,11 @@ func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanRe
 		}
 	}
 
-	// Update last_scanned_at
-	e.DB.Model(&model.Company{}).Where("id = ?", company.ID).
-		Update("last_scanned_at", time.Now())
+	if newCount > 0 {
+		if err := e.Repos.Company.RecordNewRoleDiscovery(company.ID, attemptedAt); err != nil {
+			slog.Error("scanner: record discovery", "company", company.Name, "error", err)
+		}
+	}
 
 	result.NewRoles = newCount
 	result.TotalRoles = len(roles)
