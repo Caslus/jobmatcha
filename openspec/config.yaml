@@ -1,0 +1,31 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+  context: |
+    We use conventional commits
+    Domain: job hunting platform
+    Tech Stack:
+    - Frontend: React 19, TanStack Start/Router/Query, Tailwind CSS
+    - Backend: Go, Gin, GORM, SQLite
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+  rules:
+    proposal:
+      - Keep proposals under 500 words
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+  operations:
+    apply:
+      guidance:
+        - Keep test summaries concise
+    archive:
+      guidance:
+        - Summarize the archive outcome before finishing
