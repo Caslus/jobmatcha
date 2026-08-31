@@ -28,6 +28,8 @@ export function Tooltip({ content, children }: TooltipProps) {
 				ref={ref}
 				onMouseEnter={handleMouseEnter}
 				onMouseLeave={handleMouseLeave}
+				onFocus={handleMouseEnter}
+				onBlur={handleMouseLeave}
 				className="cursor-help"
 			>
 				{children}

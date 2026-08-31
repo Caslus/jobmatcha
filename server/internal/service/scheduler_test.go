@@ -13,6 +13,7 @@ type schedulerScannerFake struct{ starts int }
 func (s *schedulerScannerFake) StartScan() (uint, error)                    { s.starts++; return 1, nil }
 func (*schedulerScannerFake) GetJob(uint) (*model.ScanJobResponse, error)   { return nil, nil }
 func (*schedulerScannerFake) GetLatestJob() (*model.ScanJobResponse, error) { return nil, nil }
+func (*schedulerScannerFake) SupportsAdapter(string) bool                   { return false }
 
 func TestSchedulerRegistersAndRemovesConfiguredJob(t *testing.T) {
 	db := testutil.Database(t)

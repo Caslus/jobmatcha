@@ -101,6 +101,12 @@ func (s *ScannerService) GetLatestJob() (*model.ScanJobResponse, error) {
 	return jobToResponse(job), nil
 }
 
+// SupportsAdapter exposes the scanner registry to application services without
+// duplicating provider configuration.
+func (s *ScannerService) SupportsAdapter(atsType string) bool {
+	return s.engine.SupportsAdapter(atsType)
+}
+
 func resultsToDTO(results []scanner.ScanResult) []model.ScanResult {
 	dtos := make([]model.ScanResult, len(results))
 	for i, r := range results {
@@ -142,4 +148,5 @@ type Scanner interface {
 	StartScan() (uint, error)
 	GetJob(uint) (*model.ScanJobResponse, error)
 	GetLatestJob() (*model.ScanJobResponse, error)
+	SupportsAdapter(string) bool
 }

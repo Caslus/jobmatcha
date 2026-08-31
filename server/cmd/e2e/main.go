@@ -24,6 +24,7 @@ func (noOpScanner) GetJob(uint) (*model.ScanJobResponse, error) { return fixture
 func (noOpScanner) GetLatestJob() (*model.ScanJobResponse, error) {
 	return fixtureScanResponse(), nil
 }
+func (noOpScanner) SupportsAdapter(string) bool { return false }
 
 func fixtureScanResponse() *model.ScanJobResponse {
 	completedAt := time.Now().Add(-30 * time.Minute)

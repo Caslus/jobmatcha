@@ -21,6 +21,7 @@ type fakeScanner struct{}
 func (fakeScanner) StartScan() (uint, error)                      { return 0, nil }
 func (fakeScanner) GetJob(uint) (*model.ScanJobResponse, error)   { return nil, nil }
 func (fakeScanner) GetLatestJob() (*model.ScanJobResponse, error) { return nil, nil }
+func (fakeScanner) SupportsAdapter(string) bool                   { return false }
 
 type fakeScheduler struct{ starts, stops int }
 

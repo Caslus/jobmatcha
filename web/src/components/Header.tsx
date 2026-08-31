@@ -18,6 +18,20 @@ export default function Header() {
 						draggable="false"
 						className="mx-auto h-10 select-none"
 					/>
+					<nav className="flex gap-1 text-xs text-[#8b9b8b]">
+						<a
+							href="/dashboard"
+							className="rounded px-2 py-1 hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
+						>
+							Jobs
+						</a>
+						<a
+							href="/companies"
+							className="rounded px-2 py-1 hover:bg-[#1a2a1a] hover:text-[#e8e8e8]"
+						>
+							Companies
+						</a>
+					</nav>
 				</div>
 				<div className="flex items-center gap-2">
 					<button

@@ -9,6 +9,7 @@ import type { AIInfoResponse } from "@/types/api.gen";
 import {
 	aiApi,
 	authApi,
+	companiesApi,
 	onboardingApi,
 	rolesApi,
 	scanApi,
@@ -28,6 +29,41 @@ export const authStatusQueryOptions = () =>
 
 export function useAuthStatus() {
 	return useQuery(authStatusQueryOptions());
+}
+
+// ---- Companies hooks ----
+
+export function useCompanies() {
+	return useQuery({
+		queryKey: queryKeys.companies.list(),
+		queryFn: () => companiesApi.list(),
+		staleTime: 1000 * 60 * 2,
+	});
+}
+
+export function useUpdateCompanyActive() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+			companiesApi.updateActive(id, { active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
+export function useUpdateCompaniesActiveBulk() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			companyIDs,
+			active,
+		}: {
+			companyIDs: number[];
+			active: boolean;
+		}) => companiesApi.updateActiveBulk({ company_ids: companyIDs, active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
 }
 
 export function useLogin() {

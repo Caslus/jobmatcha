@@ -31,6 +31,7 @@ func (f *onboardingScannerFake) StartScan() (uint, error) {
 func (f *onboardingScannerFake) GetJob(uint) (*model.ScanJobResponse, error) { return nil, nil }
 
 func (f *onboardingScannerFake) GetLatestJob() (*model.ScanJobResponse, error) { return nil, nil }
+func (f *onboardingScannerFake) SupportsAdapter(string) bool                   { return false }
 
 var _ service.Scanner = (*onboardingScannerFake)(nil)
 

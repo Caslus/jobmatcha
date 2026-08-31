@@ -84,6 +84,33 @@ func TestCompanyRepositoryListsActiveCompaniesAndFindsByID(t *testing.T) {
 	}
 }
 
+func TestCompanyRepositoryPersistsScanEvidence(t *testing.T) {
+	db := testutil.Database(t)
+	repos := repository.NewRepositories(db)
+	company := &model.Company{Name: "Evidence", CareersURL: "https://evidence.example/jobs"}
+	if err := db.Create(company).Error; err != nil {
+		t.Fatalf("create company: %v", err)
+	}
+	attemptedAt := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+	discoveredAt := attemptedAt.Add(time.Hour)
+	if err := repos.Company.RecordScanAttempt(company.ID, attemptedAt); err != nil {
+		t.Fatalf("record attempt: %v", err)
+	}
+	if err := repos.Company.RecordScanFailure(company.ID, "provider offline"); err != nil {
+		t.Fatalf("record failure: %v", err)
+	}
+	if err := repos.Company.RecordScanSuccess(company.ID, attemptedAt); err != nil {
+		t.Fatalf("record success: %v", err)
+	}
+	if err := repos.Company.RecordNewRoleDiscovery(company.ID, discoveredAt); err != nil {
+		t.Fatalf("record discovery: %v", err)
+	}
+	found, err := repos.Company.GetByID(company.ID)
+	if err != nil || found == nil || found.LastScanAttemptAt == nil || !found.LastScanAttemptAt.Equal(attemptedAt) || found.LastSuccessfulScanAt == nil || !found.LastSuccessfulScanAt.Equal(attemptedAt) || found.LastScannedAt == nil || !found.LastScannedAt.Equal(attemptedAt) || found.LastScanFailureDetail != nil || found.LastNewRoleDiscoveryAt == nil || !found.LastNewRoleDiscoveryAt.Equal(discoveredAt) {
+		t.Fatalf("stored evidence = %#v, %v", found, err)
+	}
+}
+
 func TestRoleRepositoryPersistsListsAndPatchesRoles(t *testing.T) {
 	db := testutil.Database(t)
 	repos := repository.NewRepositories(db)

@@ -12,6 +12,10 @@ export const queryKeys = {
 		tailoredResume: (id: number) =>
 			[...queryKeys.roles.all, "tailored-resume", id] as const,
 	},
+	companies: {
+		all: ["companies"] as const,
+		list: () => [...queryKeys.companies.all, "list"] as const,
+	},
 	settings: {
 		all: ["settings"] as const,
 	},

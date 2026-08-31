@@ -39,3 +39,9 @@ func (r *Registry) Get(name string) (Provider, bool) {
 	p, ok := r.providers[name]
 	return p, ok
 }
+
+// Has reports whether an adapter type is registered.
+func (r *Registry) Has(name string) bool {
+	_, ok := r.providers[name]
+	return ok
+}
