@@ -72,7 +72,7 @@ describe("CompaniesPage", () => {
 		).toBeVisible();
 		expect(screen.getAllByRole("row")[1]).toHaveTextContent("Zulu");
 		await user.click(
-			screen.getByRole("button", { name: "Company", exact: true }),
+			screen.getByRole("button", { name: /^Company$/ }),
 		);
 		const names = screen
 			.getAllByRole("row")
