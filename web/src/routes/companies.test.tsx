@@ -71,9 +71,7 @@ describe("CompaniesPage", () => {
 			screen.getByLabelText("Freshness is not tracked for this company"),
 		).toBeVisible();
 		expect(screen.getAllByRole("row")[1]).toHaveTextContent("Zulu");
-		await user.click(
-			screen.getByRole("button", { name: /^Company$/ }),
-		);
+		await user.click(screen.getByRole("button", { name: /^Company$/ }));
 		const names = screen
 			.getAllByRole("row")
 			.slice(1)
