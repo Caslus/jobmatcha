@@ -3,15 +3,56 @@ name: Test
 on:
   pull_request:
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect affected areas
+    runs-on: ubuntu-latest
+    outputs:
+      application: ${{ steps.filter.outputs.application }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          if grep --quiet --extended-regexp '^(web/|server/|Dockerfile$|\.dockerignore$|compose\.yaml$|mise\.toml$|scripts/check-coverage\.mjs$|\.github/workflows/test\.yml$)' <<< "$changed_files"; then
+            echo "application=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "application=false" >> "$GITHUB_OUTPUT"
+          fi
+          if grep --quiet --extended-regexp '^(docs/|mise\.toml$|\.github/workflows/test\.yml$)' <<< "$changed_files"; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs=false" >> "$GITHUB_OUTPUT"
+          fi
+
   container:
+    name: Container smoke test
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - run: docker build --tag jobmatcha:test .
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: jobmatcha:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Start application
         run: |
           docker volume create jobmatcha-test-data
@@ -31,7 +72,11 @@ jobs:
         run: |
           docker rm --force jobmatcha-test || true
           docker volume rm jobmatcha-test-data || true
-  unit:
+
+  application:
+    name: Application checks and coverage
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -42,15 +87,15 @@ jobs:
             ~/.cache/mise
             ~/.local/share/mise
             ~/.cache/pnpm
-          key: ${{ runner.os }}-mise-pnpm-${{ hashFiles('mise.toml', 'web/pnpm-lock.yaml', 'docs/pnpm-lock.yaml') }}
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-application-${{ hashFiles('mise.toml', 'server/go.sum', 'web/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
-      - run: pnpm --dir docs install --frozen-lockfile --config.strictDepBuilds=false
       - run: mise run "[Web] Check"
       - run: mise run "[Web] Typecheck"
       - run: mise run "[Coverage] Gate"
       - run: mise run "[Web] Build"
-      - run: mise run "[Docs] Build"
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: coverage
@@ -59,11 +104,44 @@ jobs:
             server/coverage.html
             web/coverage
           retention-days: 14
-  e2e:
+
+  docs:
+    name: Documentation build
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cache/mise
+            ~/.local/share/mise
+            ~/.cache/pnpm
+          key: ${{ runner.os }}-docs-${{ hashFiles('mise.toml', 'docs/pnpm-lock.yaml') }}
+      - run: corepack enable
+      - run: pnpm --dir docs install --frozen-lockfile --config.strictDepBuilds=false
+      - run: mise run "[Docs] Build"
+
+  e2e:
+    name: Browser E2E
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cache/mise
+            ~/.local/share/mise
+            ~/.cache/pnpm
+            ~/.cache/ms-playwright
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-e2e-${{ hashFiles('mise.toml', 'server/go.sum', 'web/pnpm-lock.yaml') }}
       - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
       - run: pnpm --dir web exec playwright install --with-deps chromium
@@ -76,3 +154,19 @@ jobs:
             web/playwright-report
             web/test-results
           retention-days: 7
+
+  verify:
+    name: Test
+    if: always()
+    needs: [changes, container, application, docs, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful applicable checks
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS"
+          if jq --exit-status 'all(.result == "success" or .result == "skipped")' <<< "$RESULTS" > /dev/null; then
+            exit 0
+          fi
+          exit 1
