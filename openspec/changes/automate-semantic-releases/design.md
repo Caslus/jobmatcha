@@ -21,7 +21,7 @@ See proposal.md for motivation and specs/release-automation/spec.md for required
 
 ### Semantic-release owns release tags and GitHub Releases
 
-Run semantic-release after main-branch validation with full Git history. Its commit analyzer and GitHub integration calculate the SemVer release, create the tag, generate notes, and create the GitHub Release. This avoids a manual version input and makes v1.0.0 the baseline once the repository owner removes the failed tag.
+Run semantic-release after a pull request has passed its required checks and merged to the protected main branch, with full Git history. Its commit analyzer and GitHub integration calculate the SemVer release, create the tag, generate notes, and create the GitHub Release. This avoids a manual version input and makes v1.0.0 the baseline once the repository owner removes the failed tag.
 
 Alternative considered: retain tag-triggered publishing and ask contributors to choose tags. Rejected because it preserves the manual release failure mode.
 
