@@ -7,12 +7,14 @@
 ## Validation
 
 <!-- List commands run and any manual checks using real Markdown. Application changes require:
-mise run "[Web] Check"
-mise run "[Web] Typecheck"
-mise run "[Coverage] Gate"
-mise run "[Web] Build"
-mise run "[Web] Run browser E2E tests"
-Include `mise run "[Docs] Build"` for documentation changes. Include screenshots for UI changes. -->
+mise run web:check
+mise run web:typecheck
+mise run coverage:gate
+mise run web:build
+mise run web:e2e
+Include `mise run docs:build` for documentation changes. Focused CI contracts are
+`ci:application`, `ci:docs`, `ci:e2e`, and `ci:container`; use `mise run ci:all`
+to run all of them. Include screenshots for UI changes. -->
 
 ## Checklist
 

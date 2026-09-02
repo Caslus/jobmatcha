@@ -1,0 +1,17 @@
+application:
+  - 'web/**'
+  - 'server/**'
+  - 'Dockerfile'
+  - '.dockerignore'
+  - 'compose.yaml'
+  - 'scripts/check-coverage.mjs'
+
+docs:
+  - 'docs/**'
+  - 'README.md'
+  - 'CONTRIBUTING.md'
+
+workflow:
+  - 'mise.toml'
+  - '.github/workflows/**'
+  - '.github/filters.yml'

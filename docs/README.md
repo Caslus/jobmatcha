@@ -3,9 +3,12 @@
 This directory is the standalone [Starlight](https://starlight.astro.build/) documentation site. It is not part of the Jobmatcha production container.
 
 ```bash
-corepack enable
-pnpm install
-pnpm dev
+mise install
+pnpm --dir docs install --frozen-lockfile
+mise run docs:dev
 ```
 
-Use `pnpm build` to validate and generate the production site in `dist/`. From the repository root, the equivalent commands are `mise run "[Docs] Run dev"` and `mise run "[Docs] Build"`.
+Use `mise run docs:build` to validate and generate the production site in
+`dist/`. PNPM 10.23.0 is provisioned by Mise; dependency installation remains
+an explicit command. Root dotenv files are not loaded automatically by the
+application or Mise.
