@@ -7,7 +7,7 @@ Jobmatcha builds into one container: Gin serves the API and the built React appl
 
 ## Docker Compose
 
-Use the supplied [`compose.yaml`](https://github.com/Caslus/jobmatcha/blob/main/compose.yaml) as described in [Start with Docker Compose](/get-started/docker-compose/). It publishes port `8181`, mounts the `jobmatcha-data` volume at `/data`, and sets `COOKIE_SECURE=false` for direct local HTTP access.
+Use the published-image Compose example in [Start with Docker Compose](/get-started/docker-compose/). It pulls `ghcr.io/caslus/jobmatcha:latest`, publishes port `8181`, mounts the `jobmatcha-data` volume at `/data`, and sets `COOKIE_SECURE=false` for direct local HTTP access. The repository's [`compose.yaml`](https://github.com/Caslus/jobmatcha/blob/main/compose.yaml) remains available when you want to build from source.
 
 ## HTTPS and reverse proxies
 

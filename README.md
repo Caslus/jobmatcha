@@ -18,14 +18,34 @@ Jobmatcha starts with a seeded set of company career sites and turns them into a
 
 ## Start in two minutes
 
+Create a `compose.yaml` containing:
+
+```yaml
+services:
+  jobmatcha:
+    image: ghcr.io/caslus/jobmatcha:latest
+    pull_policy: always
+    ports:
+      - "8181:8181"
+    environment:
+      DB_PATH: /data/app.db
+      COOKIE_SECURE: "false"
+    volumes:
+      - jobmatcha-data:/data
+    restart: unless-stopped
+
+volumes:
+  jobmatcha-data:
+```
+
+Start Jobmatcha and read the generated password:
+
 ```bash
-git clone https://github.com/Caslus/jobmatcha.git
-cd jobmatcha
 docker compose up -d
 docker compose exec jobmatcha cat /data/initial-password
 ```
 
-Open [http://localhost:8181](http://localhost:8181), sign in with the generated password, and complete onboarding. Your data stays in the `jobmatcha-data` Docker volume.
+Docker Compose pulls the published image instead of building from source. Open [http://localhost:8181](http://localhost:8181), sign in with the generated password, and complete onboarding. Your data stays in the `jobmatcha-data` Docker volume.
 
 ## Documentation
 
