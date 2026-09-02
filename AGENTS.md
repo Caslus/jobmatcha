@@ -9,7 +9,7 @@ Gin/SQLite backend in `server/`.
   `mise install` once, then `mise tasks` to discover available tasks.
 - Prefer `mise run "<task name>"` over invoking a command directly whenever a
   matching task exists in `mise.toml`.
-- Mise and the Go module use Go 1.26.6; Node 26.7.0, PNPM 10.23.0, and Air are also pinned.
+- Mise and the Go module use Go 1.26.6; Node 26.7.0, PNPM 10.23.0, Air, and Actionlint are also pinned.
 - Do not alter generated output or build directories: `web/src/types/api.gen.ts`,
   `web/src/routeTree.gen.ts`, and `web/dist/`.
 
@@ -36,7 +36,8 @@ Use these tasks from the repository root:
 | Run backend coverage | `mise run server:coverage` |
 | Run CI-equivalent coverage gate | `mise run coverage:gate` |
 | Build the documentation site | `mise run docs:build` |
-| Run focused CI contracts | `mise run ci:application`, `mise run ci:docs`, `mise run ci:e2e`, or `mise run ci:container` |
+| Lint GitHub Actions workflows | `mise run ci:workflows` |
+| Run focused CI contracts | `mise run ci:application`, `mise run ci:docs`, `mise run ci:e2e`, `mise run ci:container`, or `mise run ci:workflows` |
 | Run every CI contract | `mise run ci:all` |
 
 Do not use a task to install dependencies; use the appropriate package manager

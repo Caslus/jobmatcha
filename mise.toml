@@ -1,5 +1,6 @@
 [tools]
 air = "1.67.4"
+actionlint = "1.7.12"
 go = "1.26.6"
 node = "26.7.0"
 pnpm = "10.23.0"
@@ -147,9 +148,13 @@ depends = ["web:e2e"]
 description = "Run the container smoke test"
 depends = ["container:smoke"]
 
+[tasks."ci:workflows"]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+
 [tasks."ci:all"]
 description = "Run every CI-equivalent job"
-depends = ["ci:application", "ci:docs", "ci:e2e", "ci:container"]
+depends = ["ci:application", "ci:docs", "ci:e2e", "ci:container", "ci:workflows"]
 
 [tasks."dev:all"]
 description = "Run the API, frontend, and documentation development servers"

@@ -136,10 +136,20 @@ jobs:
             web/test-results
           retention-days: 7
 
+  workflows:
+    name: GitHub Actions workflow lint
+    needs: changes
+    if: needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - run: mise run ci:workflows
+
   verify:
     name: Test
     if: always()
-    needs: [commit-me, changes, container, application, docs, e2e]
+    needs: [commit-me, changes, container, application, docs, e2e, workflows]
     runs-on: ubuntu-latest
     steps:
       - name: Require successful applicable checks
