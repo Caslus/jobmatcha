@@ -9,7 +9,7 @@ Gin/SQLite backend in `server/`.
   `mise install` once, then `mise tasks` to discover available tasks.
 - Prefer `mise run "<task name>"` over invoking a command directly whenever a
   matching task exists in `mise.toml`.
-- Mise and the Go module use Go 1.26.6; Node 26.7.0 and Air are also pinned.
+- Mise and the Go module use Go 1.26.6; Node 26.7.0, PNPM 10.23.0, and Air are also pinned.
 - Do not alter generated output or build directories: `web/src/types/api.gen.ts`,
   `web/src/routeTree.gen.ts`, and `web/dist/`.
 
@@ -19,22 +19,25 @@ Use these tasks from the repository root:
 
 | Goal | Task |
 | --- | --- |
-| Run the frontend in development | `mise run "[Web] Run dev"` |
-| Build the static frontend | `mise run "[Web] Build"` |
-| Check frontend formatting and lint rules | `mise run "[Web] Check"` |
-| Typecheck the frontend | `mise run "[Web] Typecheck"` |
-| Regenerate route tree | `mise run "[Web] Generate Routes"` |
-| Run frontend tests | `mise run "[Web] Run tests"` |
-| Run frontend coverage | `mise run "[Web] Run coverage"` |
-| Run frontend browser E2E tests | `mise run "[Web] Run browser E2E tests"` |
-| Run the backend in development | `mise run "[Server] Run dev"` |
-| Build the backend binary | `mise run "[Server] Build"` |
-| Regenerate API DTOs | `mise run "[Server] Generate DTOs"` |
-| Run focused API tests | `mise run "[Server] Run API tests"` |
-| Run all backend tests | `mise run "[Server] Run all tests"` |
-| Run backend coverage | `mise run "[Server] Run coverage"` |
-| Run CI-equivalent coverage gate | `mise run "[Coverage] Gate"` |
-| Build the documentation site | `mise run "[Docs] Build"` |
+| Run all local development services | `mise run dev:all` |
+| Run the frontend in development | `mise run web:dev` |
+| Build the static frontend | `mise run web:build` |
+| Check frontend formatting and lint rules | `mise run web:check` |
+| Typecheck the frontend | `mise run web:typecheck` |
+| Regenerate route tree | `mise run web:generate-routes` |
+| Run frontend tests | `mise run web:test` |
+| Run frontend coverage | `mise run web:coverage` |
+| Run frontend browser E2E tests | `mise run web:e2e` |
+| Run the backend in development | `mise run server:dev` |
+| Build the backend binary | `mise run server:build` |
+| Regenerate API DTOs | `mise run server:generate-dtos` |
+| Run focused API tests | `mise run server:test-api` |
+| Run all backend tests | `mise run server:test` |
+| Run backend coverage | `mise run server:coverage` |
+| Run CI-equivalent coverage gate | `mise run coverage:gate` |
+| Build the documentation site | `mise run docs:build` |
+| Run focused CI contracts | `mise run ci:application`, `mise run ci:docs`, `mise run ci:e2e`, or `mise run ci:container` |
+| Run every CI contract | `mise run ci:all` |
 
 Do not use a task to install dependencies; use the appropriate package manager
 only when dependencies actually need to change.
@@ -45,18 +48,18 @@ For every application change, run these exact commands before opening or
 updating a pull request:
 
 ```text
-mise run "[Web] Check"
-mise run "[Web] Typecheck"
-mise run "[Coverage] Gate"
-mise run "[Web] Build"
-mise run "[Web] Run browser E2E tests"
+mise run web:check
+mise run web:typecheck
+mise run coverage:gate
+mise run web:build
+mise run web:e2e
 ```
 
-`[Coverage] Gate` is authoritative: it runs backend and frontend coverage and
+`coverage:gate` is authoritative: it runs backend and frontend coverage and
 enforces the same weighted thresholds as CI. Running `[Server] Run coverage`
 alone only produces a report; it does not enforce the threshold.
 
-Run `mise run "[Docs] Build"` whenever `docs/`, README content, or other
+Run `mise run docs:build` whenever `docs/`, README content, or other
 user-facing documentation changes. When a validation command fails, inspect
 and resolve its actual failure before handing off or updating the PR.
 
@@ -141,7 +144,7 @@ generated from them.
 
 ## Static deployment contract
 
-`mise run "[Web] Build"` creates `web/dist/client`. Gin serves that
+`mise run web:build` creates `web/dist/client`. Gin serves that
 directory and reserves `/api/*` for JSON endpoints; other GET and HEAD paths
 fall back to `index.html` so deep links work. The TanStack Start server bundle
 is not deployed or used.
@@ -149,8 +152,10 @@ is not deployed or used.
 For a packaged deployment, place `web/dist/client` alongside the backend or
 set `STATIC_DIR` to its absolute path. Set runtime values such as `SERVER_PORT`,
 `DB_PATH`, and `STATIC_DIR` through environment variables. Local `.env` files
-may help a developer shell, but are not loaded by the application and must
-never be committed.
+may help a developer shell, but are not loaded by the application or Mise and
+must never be committed. Install dependencies explicitly after `mise install`
+with `pnpm --dir web install --frozen-lockfile` and `pnpm --dir docs install
+--frozen-lockfile`; do not add dependency installation as a Mise task.
 
 ## Security and generated-code rules
 

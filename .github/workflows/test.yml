@@ -17,66 +17,29 @@ jobs:
     outputs:
       application: ${{ steps.filter.outputs.application }}
       docs: ${{ steps.filter.outputs.docs }}
+      workflow: ${{ steps.filter.outputs.workflow }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
         with:
-          fetch-depth: 0
-      - id: filter
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
-          if grep --quiet --extended-regexp '^(web/|server/|Dockerfile$|\.dockerignore$|compose\.yaml$|mise\.toml$|scripts/check-coverage\.mjs$|\.github/workflows/test\.yml$)' <<< "$changed_files"; then
-            echo "application=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "application=false" >> "$GITHUB_OUTPUT"
-          fi
-          if grep --quiet --extended-regexp '^(docs/|mise\.toml$|\.github/workflows/test\.yml$)' <<< "$changed_files"; then
-            echo "docs=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs=false" >> "$GITHUB_OUTPUT"
-          fi
+          filters: .github/filters.yml
+    permissions:
+      pull-requests: read
 
   container:
     name: Container smoke test
     needs: changes
-    if: needs.changes.outputs.application == 'true'
+    if: needs.changes.outputs.application == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: jobmatcha:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Start application
-        run: |
-          docker volume create jobmatcha-test-data
-          docker run --detach --name jobmatcha-test --publish 8181:8181 --volume jobmatcha-test-data:/data jobmatcha:test
-      - name: Verify API and SPA
-        run: |
-          for attempt in {1..20}; do
-            if curl --fail --silent --show-error http://127.0.0.1:8181/api/health | grep -q '"status":"ok"'; then
-              curl --fail --silent --show-error http://127.0.0.1:8181/ | grep -qi '<!doctype html>'
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs jobmatcha-test
-          exit 1
-      - if: always()
-        run: |
-          docker rm --force jobmatcha-test || true
-          docker volume rm jobmatcha-test-data || true
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - run: mise run ci:container
 
   application:
     name: Application checks and coverage
     needs: changes
-    if: needs.changes.outputs.application == 'true'
+    if: needs.changes.outputs.application == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -90,12 +53,8 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: ${{ runner.os }}-application-${{ hashFiles('mise.toml', 'server/go.sum', 'web/pnpm-lock.yaml') }}
-      - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
-      - run: mise run "[Web] Check"
-      - run: mise run "[Web] Typecheck"
-      - run: mise run "[Coverage] Gate"
-      - run: mise run "[Web] Build"
+      - run: mise run ci:application
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: coverage
@@ -108,7 +67,7 @@ jobs:
   docs:
     name: Documentation build
     needs: changes
-    if: needs.changes.outputs.docs == 'true'
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -120,14 +79,13 @@ jobs:
             ~/.local/share/mise
             ~/.cache/pnpm
           key: ${{ runner.os }}-docs-${{ hashFiles('mise.toml', 'docs/pnpm-lock.yaml') }}
-      - run: corepack enable
       - run: pnpm --dir docs install --frozen-lockfile --config.strictDepBuilds=false
-      - run: mise run "[Docs] Build"
+      - run: mise run ci:docs
 
   e2e:
     name: Browser E2E
     needs: changes
-    if: needs.changes.outputs.application == 'true'
+    if: needs.changes.outputs.application == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -142,10 +100,9 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: ${{ runner.os }}-e2e-${{ hashFiles('mise.toml', 'server/go.sum', 'web/pnpm-lock.yaml') }}
-      - run: corepack enable
       - run: pnpm --dir web install --frozen-lockfile
       - run: pnpm --dir web exec playwright install --with-deps chromium
-      - run: mise run "[Web] Run browser E2E tests"
+      - run: mise run ci:e2e
       - if: failure()
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:

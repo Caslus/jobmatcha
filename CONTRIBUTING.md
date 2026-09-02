@@ -16,13 +16,17 @@ Follow the [development guide](docs/src/content/docs/developers/development.md) 
 Before opening a pull request, run the checks relevant to your change:
 
 ```bash
-mise run "[Server] Run all tests"
-mise run "[Web] Check"
-mise run "[Web] Typecheck"
-mise run "[Web] Run tests"
-mise run "[Web] Build"
-mise run "[Docs] Build"
+mise run server:test
+mise run web:check
+mise run web:typecheck
+mise run web:test
+mise run web:build
+mise run docs:build
 ```
+
+Use `mise run dev:all` to start the API, SPA, and documentation site together.
+The focused CI tasks are `ci:application`, `ci:docs`, `ci:e2e`, and
+`ci:container`; `mise run ci:all` runs every CI contract.
 
 ## Project conventions
 

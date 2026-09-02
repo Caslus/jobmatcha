@@ -2,6 +2,7 @@
 air = "1.67.4"
 go = "1.26.6"
 node = "26.7.0"
+pnpm = "10.23.0"
 
 [env]
 WEB_PORT = "3000"
@@ -9,22 +10,147 @@ SERVER_PORT = "8181"
 DB_PATH = "data/app.db"
 COOKIE_SECURE = "false"
 
-[tasks]
-"[Web] Run dev" = { run = "cd web && pnpm run dev" }
-"[Web] Build" = { run = "cd web && pnpm run build", description = "Build the static SPA for Gin to serve" }
-"[Web] Check" = { run = "cd web && pnpm run check", description = "Run Biome formatting and lint checks" }
-"[Web] Typecheck" = { run = "cd web && pnpm exec tsc --noEmit", description = "Typecheck the frontend" }
-"[Web] Generate Routes" = { run = "cd web && pnpm run generate-routes", description = "Regenerate the file-based route tree" }
-"[Web] Run tests" = { run = "cd web && pnpm run test", description = "Run frontend unit tests" }
-"[Web] Run coverage" = { run = "cd web && pnpm run test:coverage", description = "Run frontend tests with V8 coverage" }
-"[Web] Run browser E2E tests" = { run = "mise run \"[Web] Build\" && cd web && pnpm exec playwright test", description = "Run Playwright against the production SPA build" }
-"[Web] Capture README screenshots" = { run = 'mise run "[Web] Build" && cd web && pnpm run capture-readme-screenshots', description = "Refresh README screenshots from the fictional browser fixture" }
-"[Docs] Run dev" = { run = "cd docs && pnpm run dev", description = "Run the Starlight documentation site" }
-"[Docs] Build" = { run = "cd docs && pnpm run build", env = { PNPM_CONFIG_STRICT_DEP_BUILDS = "false" }, description = "Validate and build the Starlight documentation site" }
-"[Server] Run dev" = { run = "cd server && air" }
-"[Server] Build" = { run = "cd server && go build -o dist/api ./cmd/api/", description = "Pre-compile the Go binary" }
-"[Server] Generate DTOs" = { run = "cd server && tygo generate" }
-"[Server] Run API tests" = { run = "cd server && go test ./internal/api/ -v -count=1" }
-"[Server] Run all tests" = { run = "cd server && go test ./...", description = "Run the full backend test suite" }
-"[Server] Run coverage" = { run = "cd server && go test ./... -covermode=atomic -coverpkg=./... -coverprofile=coverage.out && go tool cover -func=coverage.out && go tool cover -html=coverage.out -o coverage.html", description = "Run Go tests with coverage reports" }
-"[Coverage] Gate" = { run = "mise run \"[Server] Run coverage\" && mise run \"[Web] Run coverage\" && node scripts/check-coverage.mjs", description = "Enforce maintained application coverage thresholds" }
+[tasks."web:dev"]
+alias = "[Web] Run dev"
+description = "Run the frontend development server"
+dir = "web"
+run = "pnpm run dev"
+
+[tasks."web:build"]
+alias = "[Web] Build"
+description = "Build the static SPA for Gin to serve"
+dir = "web"
+run = "pnpm run build"
+sources = ["src/**/*", "public/**/*", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "vite.config.ts", "tsconfig*.json"]
+outputs = ["dist/client"]
+
+[tasks."web:check"]
+alias = "[Web] Check"
+description = "Run Biome formatting and lint checks"
+dir = "web"
+run = "pnpm run check"
+
+[tasks."web:typecheck"]
+alias = "[Web] Typecheck"
+description = "Typecheck the frontend"
+dir = "web"
+run = "pnpm exec tsc --noEmit"
+
+[tasks."web:generate-routes"]
+alias = "[Web] Generate Routes"
+description = "Regenerate the file-based route tree"
+dir = "web"
+run = "pnpm run generate-routes"
+
+[tasks."web:test"]
+alias = "[Web] Run tests"
+description = "Run frontend unit tests"
+dir = "web"
+run = "pnpm run test"
+
+[tasks."web:coverage"]
+alias = "[Web] Run coverage"
+description = "Run frontend tests with V8 coverage"
+dir = "web"
+run = "pnpm run test:coverage"
+
+[tasks."web:e2e"]
+alias = "[Web] Run browser E2E tests"
+description = "Run Playwright against the production SPA build"
+dir = "web"
+depends = ["web:build"]
+run = "pnpm exec playwright test"
+
+[tasks."web:capture-readme-screenshots"]
+alias = "[Web] Capture README screenshots"
+description = "Refresh README screenshots from the fictional browser fixture"
+dir = "web"
+depends = ["web:build"]
+run = "pnpm run capture-readme-screenshots"
+
+[tasks."docs:dev"]
+alias = "[Docs] Run dev"
+description = "Run the Starlight documentation site"
+dir = "docs"
+run = "pnpm run dev"
+
+[tasks."docs:build"]
+alias = "[Docs] Build"
+description = "Validate and build the Starlight documentation site"
+dir = "docs"
+env = { PNPM_CONFIG_STRICT_DEP_BUILDS = "false" }
+run = "pnpm run build"
+sources = ["src/**/*", "public/**/*", "package.json", "pnpm-lock.yaml", "astro.config.mjs", "tsconfig.json"]
+outputs = ["dist"]
+
+[tasks."server:dev"]
+alias = "[Server] Run dev"
+description = "Run the API development server"
+dir = "server"
+run = "air"
+
+[tasks."server:build"]
+alias = "[Server] Build"
+description = "Pre-compile the Go binary"
+dir = "server"
+run = "go build -o dist/api ./cmd/api/"
+sources = ["cmd/**/*.go", "internal/**/*.go", "migrations/**/*", "go.mod", "go.sum"]
+outputs = ["dist/api"]
+
+[tasks."server:generate-dtos"]
+alias = "[Server] Generate DTOs"
+description = "Regenerate frontend API DTOs"
+dir = "server"
+run = "tygo generate"
+
+[tasks."server:test-api"]
+alias = "[Server] Run API tests"
+description = "Run focused API tests"
+dir = "server"
+run = "go test ./internal/api/ -v -count=1"
+
+[tasks."server:test"]
+alias = "[Server] Run all tests"
+description = "Run the full backend test suite"
+dir = "server"
+run = "go test ./..."
+
+[tasks."server:coverage"]
+alias = "[Server] Run coverage"
+description = "Run Go tests with coverage reports"
+dir = "server"
+run = "go test ./... -covermode=atomic -coverpkg=./... -coverprofile=coverage.out && go tool cover -func=coverage.out && go tool cover -html=coverage.out -o coverage.html"
+
+[tasks."coverage:gate"]
+alias = "[Coverage] Gate"
+description = "Enforce maintained application coverage thresholds"
+depends = ["server:coverage", "web:coverage"]
+run = "node scripts/check-coverage.mjs"
+
+[tasks."container:smoke"]
+description = "Build the container image and verify its API and SPA"
+run = "node scripts/container-smoke.mjs"
+
+[tasks."ci:application"]
+description = "Run application checks, coverage, and the static SPA build"
+depends = ["web:check", "web:typecheck", "coverage:gate", "web:build"]
+
+[tasks."ci:docs"]
+description = "Build the documentation site"
+depends = ["docs:build"]
+
+[tasks."ci:e2e"]
+description = "Run browser E2E tests"
+depends = ["web:e2e"]
+
+[tasks."ci:container"]
+description = "Run the container smoke test"
+depends = ["container:smoke"]
+
+[tasks."ci:all"]
+description = "Run every CI-equivalent job"
+depends = ["ci:application", "ci:docs", "ci:e2e", "ci:container"]
+
+[tasks."dev:all"]
+description = "Run the API, frontend, and documentation development servers"
+run = "node scripts/dev-all.mjs"
