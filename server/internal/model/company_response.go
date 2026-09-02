@@ -39,6 +39,11 @@ type CompanyActiveUpdateRequest struct {
 	Active *bool `json:"active" binding:"required"`
 }
 
+type CompanyDetailsUpdateRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Location string `json:"location"`
+}
+
 type CompanyBulkActiveUpdateRequest struct {
 	CompanyIDs []uint `json:"company_ids" binding:"required,min=1"`
 	Active     *bool  `json:"active" binding:"required"`
@@ -46,6 +51,15 @@ type CompanyBulkActiveUpdateRequest struct {
 
 type CareerBoardActiveUpdateRequest struct {
 	Active *bool `json:"active" binding:"required"`
+}
+
+// CareerBoardUpsertRequest describes a manually managed board source. The
+// server normalizes these fields through the registered provider before it is
+// persisted.
+type CareerBoardUpsertRequest struct {
+	Provider        string `json:"provider" binding:"required"`
+	BoardIdentifier string `json:"board_identifier" binding:"required"`
+	CanonicalURL    string `json:"canonical_url" binding:"required"`
 }
 
 type CareerBoardDiscoveryRequest struct {

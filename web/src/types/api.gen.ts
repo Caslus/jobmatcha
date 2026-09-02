@@ -183,12 +183,26 @@ export interface CompanyListResponse {
 export interface CompanyActiveUpdateRequest {
   active?: boolean;
 }
+export interface CompanyDetailsUpdateRequest {
+  name: string;
+  location: string;
+}
 export interface CompanyBulkActiveUpdateRequest {
   company_ids: number /* uint */[];
   active?: boolean;
 }
 export interface CareerBoardActiveUpdateRequest {
   active?: boolean;
+}
+/**
+ * CareerBoardUpsertRequest describes a manually managed board source. The
+ * server normalizes these fields through the registered provider before it is
+ * persisted.
+ */
+export interface CareerBoardUpsertRequest {
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
 }
 export interface CareerBoardDiscoveryRequest {
   careers_url: string;

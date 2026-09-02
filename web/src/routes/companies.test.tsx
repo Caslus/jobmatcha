@@ -55,6 +55,11 @@ vi.mock("../hooks/useApi", () => ({
 	useUpdateCompanyActive: () => ({ mutate, isPending: false }),
 	useUpdateCompaniesActiveBulk: () => ({ mutate, isPending: false }),
 	useUpdateCareerBoardActive: () => ({ mutate, isPending: false }),
+	useUpdateCompanyDetails: () => ({ mutate, isPending: false }),
+	useDeleteCompany: () => ({ mutate, isPending: false }),
+	useCreateCareerBoard: () => ({ mutate, isPending: false }),
+	useUpdateCareerBoardDetails: () => ({ mutate, isPending: false }),
+	useDeleteCareerBoard: () => ({ mutate, isPending: false }),
 	useDiscoverCareerBoards: () => ({
 		data: null,
 		isPending: false,
@@ -73,7 +78,7 @@ describe("CompaniesPage", () => {
 			screen.getByLabelText("Freshness is not tracked for this company"),
 		).toBeVisible();
 		await user.click(screen.getByLabelText("Select Alpha"));
-		expect(screen.getByRole("button", { name: /enable 1/i })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Enable" })).toBeEnabled();
 		await user.click(screen.getByRole("switch", { name: "Zulu enabled" }));
 		expect(mutate).toHaveBeenCalledWith({ id: 1, active: false });
 		await user.click(

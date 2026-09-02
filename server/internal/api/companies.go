@@ -48,6 +48,36 @@ func (h *CompanyHandler) UpdateActive(c *gin.Context) {
 	c.JSON(http.StatusOK, item)
 }
 
+func (h *CompanyHandler) UpdateDetails(c *gin.Context) {
+	id, ok := companyIDParam(c)
+	if !ok {
+		return
+	}
+	var req model.CompanyDetailsUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "A company name is required."})
+		return
+	}
+	item, err := h.svc.UpdateDetails(id, req.Name, req.Location)
+	if err != nil {
+		handleCompanyMutationError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+func (h *CompanyHandler) Delete(c *gin.Context) {
+	id, ok := companyIDParam(c)
+	if !ok {
+		return
+	}
+	if err := h.svc.Delete(id); err != nil {
+		handleCompanyMutationError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 func (h *CompanyHandler) UpdateActiveBulk(c *gin.Context) {
 	var req model.CompanyBulkActiveUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.Active == nil || len(req.CompanyIDs) == 0 || hasDuplicateIDs(req.CompanyIDs) {
@@ -66,14 +96,8 @@ func (h *CompanyHandler) UpdateActiveBulk(c *gin.Context) {
 }
 
 func (h *CompanyHandler) UpdateBoardActive(c *gin.Context) {
-	companyID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || companyID == 0 {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid company ID."})
-		return
-	}
-	boardID, err := strconv.ParseUint(c.Param("boardID"), 10, 64)
-	if err != nil || boardID == 0 {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid board ID."})
+	companyID, boardID, ok := boardIDsParam(c)
+	if !ok {
 		return
 	}
 	var req model.CareerBoardActiveUpdateRequest
@@ -81,9 +105,58 @@ func (h *CompanyHandler) UpdateBoardActive(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "An active state is required."})
 		return
 	}
-	item, err := h.svc.UpdateBoardActive(uint(companyID), uint(boardID), *req.Active)
+	item, err := h.svc.UpdateBoardActive(companyID, boardID, *req.Active)
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "Career board not found."})
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+func (h *CompanyHandler) CreateBoard(c *gin.Context) {
+	companyID, ok := companyIDParam(c)
+	if !ok {
+		return
+	}
+	var req model.CareerBoardUpsertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "A provider, board identifier, and board URL are required."})
+		return
+	}
+	item, err := h.svc.CreateBoard(c.Request.Context(), companyID, req)
+	if err != nil {
+		handleCompanyMutationError(c, err)
+		return
+	}
+	c.JSON(http.StatusCreated, item)
+}
+
+func (h *CompanyHandler) UpdateBoardDetails(c *gin.Context) {
+	companyID, boardID, ok := boardIDsParam(c)
+	if !ok {
+		return
+	}
+	var req model.CareerBoardUpsertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "A provider, board identifier, and board URL are required."})
+		return
+	}
+	item, err := h.svc.UpdateBoardDetails(c.Request.Context(), companyID, boardID, req)
+	if err != nil {
+		handleCompanyMutationError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+func (h *CompanyHandler) DeleteBoard(c *gin.Context) {
+	companyID, boardID, ok := boardIDsParam(c)
+	if !ok {
+		return
+	}
+	item, err := h.svc.DeleteBoard(companyID, boardID)
+	if err != nil {
+		handleCompanyMutationError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, item)
@@ -138,4 +211,34 @@ func hasDuplicateIDs(ids []uint) bool {
 		seen[id] = struct{}{}
 	}
 	return false
+}
+
+func companyIDParam(c *gin.Context) (uint, bool) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid company ID."})
+		return 0, false
+	}
+	return uint(id), true
+}
+
+func boardIDsParam(c *gin.Context) (uint, uint, bool) {
+	companyID, ok := companyIDParam(c)
+	if !ok {
+		return 0, 0, false
+	}
+	boardID, err := strconv.ParseUint(c.Param("boardID"), 10, 64)
+	if err != nil || boardID == 0 {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid board ID."})
+		return 0, 0, false
+	}
+	return companyID, uint(boardID), true
+}
+
+func handleCompanyMutationError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrCompanyNotFound) || errors.Is(err, service.ErrCareerBoardNotFound) {
+		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "Company or career board not found."})
+		return
+	}
+	c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: err.Error()})
 }

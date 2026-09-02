@@ -172,7 +172,7 @@ func TestRoleRepositoryPersistsListsAndPatchesRoles(t *testing.T) {
 	if err != nil || total != 3 || len(secondPage) != 1 {
 		t.Fatalf("second page = %#v, total %d, err %v", secondPage, total, err)
 	}
-	all, err := repos.Role.ListAll()
+	all, err := repos.Role.ListForEnabledCompanies()
 	if err != nil || len(all) != 3 || all[0].Company.ID != company.ID {
 		t.Fatalf("all roles = %#v, %v", all, err)
 	}

@@ -54,6 +54,20 @@ func (e *Engine) SupportsAdapter(atsType string) bool {
 	return e.Registry.Has(atsType)
 }
 
+// NormalizeCareerBoard verifies that the URL belongs to the requested
+// registered provider, returns its canonical identity, and confirms that the
+// provider can reach the board.
+func (e *Engine) NormalizeCareerBoard(ctx context.Context, identity model.BoardIdentity) (model.BoardIdentity, error) {
+	normalized, ok := e.Registry.Recognize(identity.CanonicalURL)
+	if !ok || normalized.Provider != identity.Provider || normalized.BoardIdentifier != identity.BoardIdentifier {
+		return model.BoardIdentity{}, fmt.Errorf("invalid %s career board", identity.Provider)
+	}
+	if err := e.Registry.Validate(ctx, normalized); err != nil {
+		return model.BoardIdentity{}, err
+	}
+	return normalized, nil
+}
+
 // ScanResult summarizes a single company scan.
 type ScanResult struct {
 	CompanyName string `json:"company_name"`

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -11,6 +13,15 @@ import (
 type adapterFake map[string]bool
 
 func (a adapterFake) SupportsAdapter(adapter string) bool { return a[adapter] }
+
+type boardManagerFake struct{ adapterFake }
+
+func (a boardManagerFake) NormalizeCareerBoard(_ context.Context, identity model.BoardIdentity) (model.BoardIdentity, error) {
+	if identity.Provider != "fake" || identity.BoardIdentifier == "invalid" {
+		return model.BoardIdentity{}, fmt.Errorf("invalid career board")
+	}
+	return model.BoardIdentity{Provider: identity.Provider, BoardIdentifier: identity.BoardIdentifier, CanonicalURL: "https://boards.example/" + identity.BoardIdentifier}, nil
+}
 
 func TestCompanyServiceAggregatesBoardSummary(t *testing.T) {
 	db := testutil.Database(t)
@@ -92,5 +103,60 @@ func TestCompanyServiceSuggestsExistingBoardOwner(t *testing.T) {
 	name, err := svc.SuggestedEmployerName([]model.CareerBoardDiscoveryCandidate{{Provider: "greenhouse", BoardIdentifier: "paypay"}})
 	if err != nil || name != "PayPay" {
 		t.Fatalf("SuggestedEmployerName() = %q, %v", name, err)
+	}
+}
+
+func TestCompanyServiceManagesCompanyAndCareerBoards(t *testing.T) {
+	db := testutil.Database(t)
+	repos := testutil.Repositories(db)
+	company := model.Company{Name: "Original", CareersURL: "https://original.example/careers", Active: true}
+	other := model.Company{Name: "Other", CareersURL: "https://other.example/careers", Active: true}
+	if err := db.Create(&[]model.Company{company, other}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Where("name = ?", "Original").First(&company).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Where("name = ?", "Other").First(&other).Error; err != nil {
+		t.Fatal(err)
+	}
+	svc := NewCompanyService(repos.Company, boardManagerFake{adapterFake{"fake": true}})
+
+	updated, err := svc.UpdateDetails(company.ID, " Renamed ", " Tokyo ")
+	if err != nil || updated.Name != "Renamed" || updated.Location != "Tokyo" {
+		t.Fatalf("UpdateDetails() = %#v, %v", updated, err)
+	}
+	updated, err = svc.CreateBoard(context.Background(), company.ID, model.CareerBoardUpsertRequest{Provider: "FAKE", BoardIdentifier: "primary", CanonicalURL: "https://ignored.example"})
+	if err != nil || updated.BoardCount != 1 || updated.CareerBoards[0].CanonicalURL != "https://boards.example/primary" {
+		t.Fatalf("CreateBoard() = %#v, %v", updated, err)
+	}
+	boardID := updated.CareerBoards[0].ID
+	updated, err = svc.UpdateBoardDetails(context.Background(), company.ID, boardID, model.CareerBoardUpsertRequest{Provider: "fake", BoardIdentifier: "replacement", CanonicalURL: "https://ignored.example"})
+	if err != nil || updated.CareerBoards[0].BoardIdentifier != "replacement" {
+		t.Fatalf("UpdateBoardDetails() = %#v, %v", updated, err)
+	}
+	if _, err := svc.UpdateBoardDetails(context.Background(), other.ID, boardID, model.CareerBoardUpsertRequest{Provider: "fake", BoardIdentifier: "wrong-owner", CanonicalURL: "https://ignored.example"}); err == nil {
+		t.Fatal("UpdateBoardDetails() accepted a board owned by another company")
+	}
+	if _, err := svc.CreateBoard(context.Background(), company.ID, model.CareerBoardUpsertRequest{Provider: "fake", BoardIdentifier: "invalid", CanonicalURL: "https://ignored.example"}); err == nil {
+		t.Fatal("CreateBoard() accepted an invalid board")
+	}
+	if err := db.Create(&model.Role{CompanyID: company.ID, URLHash: "historical-role", URL: "https://roles.example/1", Title: "Historical role"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	updated, err = svc.DeleteBoard(company.ID, boardID)
+	if err != nil || updated.BoardCount != 0 {
+		t.Fatalf("DeleteBoard() = %#v, %v", updated, err)
+	}
+	if err := svc.Delete(company.ID); err != nil {
+		t.Fatalf("Delete() = %v", err)
+	}
+	var role model.Role
+	if err := db.Where("url_hash = ?", "historical-role").First(&role).Error; err != nil {
+		t.Fatalf("company deletion removed historical role: %v", err)
+	}
+	var deleted model.Company
+	if err := db.First(&deleted, company.ID).Error; err == nil {
+		t.Fatal("company still exists after deletion")
 	}
 }

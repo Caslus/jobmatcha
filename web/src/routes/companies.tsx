@@ -13,12 +13,15 @@ import {
 	Layers3,
 	type LucideIcon,
 	MapPin,
+	Pencil,
+	Plus,
 	Power,
 	PowerOff,
 	ShieldOff,
 	Sparkles,
+	Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "#/components/Header.tsx";
 import { Tooltip } from "#/components/Tooltip.tsx";
 import { Modal } from "#/components/ui/modal.tsx";
@@ -32,11 +35,16 @@ import type {
 import {
 	authStatusQueryOptions,
 	useCompanies,
+	useCreateCareerBoard,
+	useDeleteCareerBoard,
+	useDeleteCompany,
 	useDiscoverCareerBoards,
 	useRegisterCareerBoards,
 	useUpdateCareerBoardActive,
+	useUpdateCareerBoardDetails,
 	useUpdateCompaniesActiveBulk,
 	useUpdateCompanyActive,
+	useUpdateCompanyDetails,
 } from "../hooks/useApi";
 
 export const Route = createFileRoute("/companies")({
@@ -82,6 +90,11 @@ export function CompaniesPage() {
 	const { data, isLoading, error } = useCompanies();
 	const single = useUpdateCompanyActive();
 	const board = useUpdateCareerBoardActive();
+	const updateCompany = useUpdateCompanyDetails();
+	const deleteCompany = useDeleteCompany();
+	const createBoard = useCreateCareerBoard();
+	const updateBoard = useUpdateCareerBoardDetails();
+	const deleteBoard = useDeleteCareerBoard();
 	const bulk = useUpdateCompaniesActiveBulk();
 	const discover = useDiscoverCareerBoards();
 	const register = useRegisterCareerBoards();
@@ -90,6 +103,9 @@ export function CompaniesPage() {
 		null,
 	);
 	const [discoveryOpen, setDiscoveryOpen] = useState(false);
+	const [editingCompany, setEditingCompany] = useState<CompanyListItem | null>(
+		null,
+	);
 	const [sortKey, setSortKey] = useState<SortKey>("jobs");
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 	const companies = useMemo(
@@ -112,7 +128,15 @@ export function CompaniesPage() {
 			}),
 		[data, sortDirection, sortKey],
 	);
-	const busy = single.isPending || bulk.isPending || board.isPending;
+	const busy =
+		single.isPending ||
+		bulk.isPending ||
+		board.isPending ||
+		updateCompany.isPending ||
+		deleteCompany.isPending ||
+		createBoard.isPending ||
+		updateBoard.isPending ||
+		deleteBoard.isPending;
 	const select = (id: number) =>
 		setSelected((current) => {
 			const next = new Set(current);
@@ -246,6 +270,7 @@ export function CompaniesPage() {
 										single.mutate({ id: company.id, active })
 									}
 									onManageBoards={() => setBoardCompany(company)}
+									onEdit={() => setEditingCompany(company)}
 									busy={busy}
 								/>
 							))}
@@ -271,6 +296,58 @@ export function CompaniesPage() {
 								onSuccess: (company) => setBoardCompany(company),
 								onError: () => setBoardCompany(previousCompany),
 							},
+						);
+					}}
+					onCreate={(input) => {
+						if (!boardCompany) return;
+						createBoard.mutate(
+							{ companyID: boardCompany.id, ...input },
+							{ onSuccess: setBoardCompany },
+						);
+					}}
+					onUpdate={(boardID, input) => {
+						if (!boardCompany) return;
+						updateBoard.mutate(
+							{ companyID: boardCompany.id, boardID, ...input },
+							{ onSuccess: setBoardCompany },
+						);
+					}}
+					onDelete={(boardID) => {
+						if (
+							!boardCompany ||
+							!window.confirm(
+								"Delete this career board? Existing jobs will be kept as history.",
+							)
+						)
+							return;
+						deleteBoard.mutate(
+							{ companyID: boardCompany.id, boardID },
+							{ onSuccess: setBoardCompany },
+						);
+					}}
+				/>
+				<CompanyEditModal
+					company={editingCompany}
+					busy={busy}
+					onClose={() => setEditingCompany(null)}
+					onSave={(name, location) => {
+						if (!editingCompany) return;
+						updateCompany.mutate(
+							{ id: editingCompany.id, name, location },
+							{ onSuccess: () => setEditingCompany(null) },
+						);
+					}}
+					onDelete={() => {
+						if (
+							!editingCompany ||
+							!window.confirm(
+								`Delete ${editingCompany.name}? Its job history will be kept, but hidden from the Jobs page.`,
+							)
+						)
+							return;
+						deleteCompany.mutate(
+							{ id: editingCompany.id },
+							{ onSuccess: () => setEditingCompany(null) },
 						);
 					}}
 				/>
@@ -301,12 +378,26 @@ function BoardModal({
 	busy,
 	onClose,
 	onToggle,
+	onCreate,
+	onUpdate,
+	onDelete,
 }: {
 	company: CompanyListItem | null;
 	busy: boolean;
 	onClose: () => void;
 	onToggle: (boardID: number, active: boolean) => void;
+	onCreate: (input: BoardInput) => void;
+	onUpdate: (boardID: number, input: BoardInput) => void;
+	onDelete: (boardID: number) => void;
 }) {
+	const [editing, setEditing] = useState<
+		CompanyListItem["career_boards"][number] | null | "new"
+	>(null);
+	const saveBoard = (input: BoardInput) => {
+		if (editing === "new") onCreate(input);
+		else if (editing) onUpdate(editing.id, input);
+		setEditing(null);
+	};
 	return (
 		<Modal
 			open={company !== null}
@@ -315,8 +406,26 @@ function BoardModal({
 			subtitle="Career board sources"
 			icon={<Layers3 size={16} className="text-[#7dba7a]" />}
 			panelClassName="max-w-2xl"
+			headerActions={
+				<button
+					type="button"
+					onClick={() => setEditing("new")}
+					disabled={!company || busy}
+					className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2a1a] px-2.5 py-1.5 text-xs font-medium text-[#c8d5c8] transition hover:bg-[#253425] disabled:opacity-50"
+				>
+					<Plus size={14} /> Add board
+				</button>
+			}
 		>
 			<div className="max-h-[calc(92vh-4.5rem)] space-y-3 overflow-y-auto p-5 sm:p-6">
+				{editing !== null && (
+					<BoardForm
+						board={editing === "new" ? null : editing}
+						busy={busy}
+						onCancel={() => setEditing(null)}
+						onSave={saveBoard}
+					/>
+				)}
 				{company?.career_boards.map((board) => (
 					<div key={board.id} className="rounded-2xl bg-[#101710] p-4 sm:p-5">
 						<div className="flex items-start justify-between gap-4">
@@ -341,6 +450,24 @@ function BoardModal({
 								</a>
 							</div>
 							<div className="flex shrink-0 items-center gap-2">
+								<button
+									type="button"
+									onClick={() => setEditing(board)}
+									disabled={busy}
+									aria-label={`Edit ${board.board_identifier} board`}
+									className="rounded-lg p-2 text-[#8b9b8b] transition hover:bg-[#1d2d1d] hover:text-[#d9e3d9] disabled:opacity-40"
+								>
+									<Pencil size={15} />
+								</button>
+								<button
+									type="button"
+									onClick={() => onDelete(board.id)}
+									disabled={busy}
+									aria-label={`Delete ${board.board_identifier} board`}
+									className="rounded-lg p-2 text-[#a87f7f] transition hover:bg-red-400/10 hover:text-red-200 disabled:opacity-40"
+								>
+									<Trash2 size={15} />
+								</button>
 								<span className="text-xs text-[#718071]">
 									{board.active ? "Enabled" : "Disabled"}
 								</span>
@@ -379,6 +506,171 @@ function BoardModal({
 					</p>
 				)}
 			</div>
+		</Modal>
+	);
+}
+
+type BoardInput = {
+	provider: string;
+	board_identifier: string;
+	canonical_url: string;
+};
+
+function BoardForm({
+	board,
+	busy,
+	onCancel,
+	onSave,
+}: {
+	board: CompanyListItem["career_boards"][number] | null;
+	busy: boolean;
+	onCancel: () => void;
+	onSave: (input: BoardInput) => void;
+}) {
+	const [provider, setProvider] = useState(board?.provider ?? "greenhouse");
+	const [identifier, setIdentifier] = useState(board?.board_identifier ?? "");
+	const [url, setURL] = useState(board?.canonical_url ?? "");
+	return (
+		<form
+			className="rounded-2xl bg-[#172217] p-4"
+			onSubmit={(event) => {
+				event.preventDefault();
+				onSave({ provider, board_identifier: identifier, canonical_url: url });
+			}}
+		>
+			<p className="text-sm font-semibold text-[#e8eee8]">
+				{board ? "Edit board" : "Add career board"}
+			</p>
+			<div className="mt-3 grid gap-2 sm:grid-cols-3">
+				<input
+					aria-label="Board provider"
+					required
+					value={provider}
+					onChange={(event) => setProvider(event.target.value)}
+					placeholder="Provider"
+					className="rounded-xl bg-[#0d120d] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
+				/>
+				<input
+					aria-label="Board identifier"
+					required
+					value={identifier}
+					onChange={(event) => setIdentifier(event.target.value)}
+					placeholder="Board identifier"
+					className="rounded-xl bg-[#0d120d] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
+				/>
+				<input
+					aria-label="Board URL"
+					required
+					type="url"
+					value={url}
+					onChange={(event) => setURL(event.target.value)}
+					placeholder="https://…"
+					className="rounded-xl bg-[#0d120d] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
+				/>
+			</div>
+			<div className="mt-3 flex items-center gap-2">
+				<button
+					type="submit"
+					disabled={busy}
+					className="rounded-lg bg-[#7dba7a] px-3 py-2 text-sm font-semibold text-[#080908] disabled:opacity-50"
+				>
+					Save board
+				</button>
+				<button
+					type="button"
+					onClick={onCancel}
+					className="rounded-lg px-3 py-2 text-sm text-[#8b9b8b] hover:bg-[#203020]"
+				>
+					Cancel
+				</button>
+			</div>
+		</form>
+	);
+}
+
+function CompanyEditModal({
+	company,
+	busy,
+	onClose,
+	onSave,
+	onDelete,
+}: {
+	company: CompanyListItem | null;
+	busy: boolean;
+	onClose: () => void;
+	onSave: (name: string, location: string) => void;
+	onDelete: () => void;
+}) {
+	const [name, setName] = useState("");
+	const [location, setLocation] = useState("");
+	useEffect(() => {
+		if (company) {
+			setName(company.name);
+			setLocation(company.location);
+		}
+	}, [company]);
+	return (
+		<Modal
+			open={company !== null}
+			onClose={onClose}
+			title="Edit company"
+			subtitle="Update company details or remove this company."
+			icon={<Pencil size={16} className="text-[#7dba7a]" />}
+			panelClassName="max-w-lg"
+		>
+			<form
+				className="space-y-4 p-5"
+				onSubmit={(event) => {
+					event.preventDefault();
+					onSave(name, location);
+				}}
+			>
+				<label className="block text-sm text-[#c8d5c8]">
+					Name
+					<input
+						aria-label="Company name"
+						required
+						value={name}
+						onChange={(event) => setName(event.target.value)}
+						className="mt-1.5 w-full rounded-xl bg-[#101710] px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
+					/>
+				</label>
+				<label className="block text-sm text-[#c8d5c8]">
+					Location
+					<input
+						aria-label="Company location"
+						value={location}
+						onChange={(event) => setLocation(event.target.value)}
+						className="mt-1.5 w-full rounded-xl bg-[#101710] px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
+					/>
+				</label>
+				<div className="flex items-center justify-between gap-3 pt-2">
+					<button
+						type="button"
+						disabled={busy}
+						onClick={onDelete}
+						className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-red-300 transition hover:bg-red-400/10 disabled:opacity-50"
+					>
+						<Trash2 size={15} /> Delete company
+					</button>
+					<div className="flex gap-2">
+						<button
+							type="button"
+							onClick={onClose}
+							className="rounded-lg px-3 py-2 text-sm text-[#8b9b8b] hover:bg-[#1a2a1a]"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							disabled={busy}
+							className="rounded-lg bg-[#7dba7a] px-3 py-2 text-sm font-semibold text-[#080908] disabled:opacity-50"
+						>
+							Save changes
+						</button>
+					</div>
+				</div>
+			</form>
 		</Modal>
 	);
 }
@@ -874,6 +1166,7 @@ function CompanyRow({
 	onSelect,
 	onToggle,
 	onManageBoards,
+	onEdit,
 	busy,
 }: {
 	company: CompanyListItem;
@@ -881,6 +1174,7 @@ function CompanyRow({
 	onSelect: (id: number) => void;
 	onToggle: (active: boolean) => void;
 	onManageBoards: () => void;
+	onEdit: () => void;
 	busy: boolean;
 }) {
 	return (
@@ -911,6 +1205,15 @@ function CompanyRow({
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
+				<button
+					type="button"
+					onClick={onEdit}
+					disabled={busy}
+					aria-label={`Edit ${company.name}`}
+					className="rounded-xl p-2 text-[#8b9b8b] transition hover:bg-[#1b2a1b] hover:text-[#d9e3d9] disabled:opacity-40"
+				>
+					<Pencil size={16} />
+				</button>
 				<button
 					type="button"
 					onClick={onManageBoards}

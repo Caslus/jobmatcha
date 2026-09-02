@@ -157,6 +157,50 @@ func TestRoleListFiltersSortsAndNormalizesPagination(t *testing.T) {
 	}
 }
 
+func TestRoleListExcludesDisabledCompanyRolesAndRestoresThemWhenEnabled(t *testing.T) {
+	router, db := setupRoleHandlerRouter(t)
+	enabled := model.Company{Name: "Enabled", CareersURL: "https://enabled.test/careers", Active: true}
+	disabled := model.Company{Name: "Disabled", CareersURL: "https://disabled.test/careers", Active: false}
+	if err := db.Create(&enabled).Error; err != nil {
+		t.Fatalf("create enabled company: %v", err)
+	}
+	if err := db.Create(&disabled).Error; err != nil {
+		t.Fatalf("create disabled company: %v", err)
+	}
+	if err := db.Model(&disabled).Update("active", false).Error; err != nil {
+		t.Fatalf("disable company: %v", err)
+	}
+	if err := db.Create(&[]model.Role{
+		{CompanyID: enabled.ID, URLHash: "enabled-role", URL: "https://enabled.test/jobs/1", Title: "Visible"},
+		{CompanyID: disabled.ID, URLHash: "disabled-role", URL: "https://disabled.test/jobs/1", Title: "Hidden by company"},
+	}).Error; err != nil {
+		t.Fatalf("create roles: %v", err)
+	}
+
+	list := func() model.RoleListResponse {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/roles", nil))
+		if w.Code != http.StatusOK {
+			t.Fatalf("list roles = %d: %s", w.Code, w.Body.String())
+		}
+		var response model.RoleListResponse
+		parseJSON(t, w.Body.String(), &response)
+		return response
+	}
+
+	response := list()
+	if len(response.Data) != 1 || response.Data[0].Title != "Visible" || response.Pagination.Total != 1 || response.TotalAll != 1 {
+		t.Fatalf("disabled company leaked into list: %#v", response)
+	}
+	if err := db.Model(&model.Company{}).Where("id = ?", disabled.ID).Update("active", true).Error; err != nil {
+		t.Fatalf("enable company: %v", err)
+	}
+	response = list()
+	if len(response.Data) != 2 || response.Pagination.Total != 2 || response.TotalAll != 2 {
+		t.Fatalf("re-enabled company roles not restored: %#v", response)
+	}
+}
+
 func TestRolePatchValidationAndUpdatesFalseValues(t *testing.T) {
 	router, db := setupRoleHandlerRouter(t)
 	company := model.Company{Name: "Example", CareersURL: "https://example.test/careers"}

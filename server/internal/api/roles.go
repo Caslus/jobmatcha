@@ -40,7 +40,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 	filter := service.NewRuleFilter(cfg)
 
 	// Fetch all roles (not hidden)
-	roles, err := h.repos.Role.ListAll()
+	roles, err := h.repos.Role.ListForEnabledCompanies()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Internal error."})
 		return
@@ -127,7 +127,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 	}
 
 	// Get total unfiltered count
-	totalAll, _ := h.repos.Role.CountAll()
+	totalAll, _ := h.repos.Role.CountForEnabledCompanies()
 
 	c.JSON(http.StatusOK, model.RoleListResponse{
 		Data: items,

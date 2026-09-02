@@ -86,6 +86,70 @@ func (r *CompanyRepo) UpdateBoardActive(companyID, boardID uint, active bool) er
 	return nil
 }
 
+func (r *CompanyRepo) UpdateDetails(id uint, name, location string) error {
+	result := r.db.Model(&model.Company{}).Where("id = ?", id).Updates(map[string]interface{}{"name": name, "location": location})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("%w: %d", ErrCompanyNotFound, id)
+	}
+	return nil
+}
+
+// Delete removes a company and its current sources in one transaction. Roles
+// deliberately remain as historical records and are hidden by company-aware
+// role-list queries.
+func (r *CompanyRepo) Delete(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var company model.Company
+		if err := tx.First(&company, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("%w: %d", ErrCompanyNotFound, id)
+			}
+			return err
+		}
+		if err := tx.Where("company_id = ?", id).Delete(&model.CareerBoard{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&company).Error
+	})
+}
+
+func (r *CompanyRepo) CreateBoard(companyID uint, board *model.CareerBoard) error {
+	var company model.Company
+	if err := r.db.First(&company, companyID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("%w: %d", ErrCompanyNotFound, companyID)
+		}
+		return err
+	}
+	board.CompanyID = companyID
+	return r.db.Create(board).Error
+}
+
+func (r *CompanyRepo) UpdateBoardDetails(companyID, boardID uint, board model.BoardIdentity) error {
+	result := r.db.Model(&model.CareerBoard{}).Where("id = ? AND company_id = ?", boardID, companyID).Updates(map[string]interface{}{"provider": board.Provider, "board_identifier": board.BoardIdentifier, "canonical_url": board.CanonicalURL})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("%w: %d", ErrCareerBoardNotFound, boardID)
+	}
+	return nil
+}
+
+func (r *CompanyRepo) DeleteBoard(companyID, boardID uint) error {
+	result := r.db.Where("id = ? AND company_id = ?", boardID, companyID).Delete(&model.CareerBoard{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("%w: %d", ErrCareerBoardNotFound, boardID)
+	}
+	return nil
+}
+
 func (r *CompanyRepo) GetByID(id uint) (*model.Company, error) {
 	var company model.Company
 	result := r.db.Where("id = ?", id).Find(&company)

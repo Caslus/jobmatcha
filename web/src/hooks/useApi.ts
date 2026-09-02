@@ -83,6 +83,81 @@ export function useUpdateCompaniesActiveBulk() {
 	});
 }
 
+function useCompanyListMutation<TData, TVariables>(
+	mutationFn: (variables: TVariables) => Promise<TData>,
+) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn,
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
+export function useUpdateCompanyDetails() {
+	return useCompanyListMutation(
+		({ id, name, location }: { id: number; name: string; location: string }) =>
+			companiesApi.updateDetails(id, { name, location }),
+	);
+}
+
+export function useDeleteCompany() {
+	return useCompanyListMutation(({ id }: { id: number }) =>
+		companiesApi.delete(id),
+	);
+}
+
+export function useCreateCareerBoard() {
+	return useCompanyListMutation(
+		({
+			companyID,
+			provider,
+			board_identifier,
+			canonical_url,
+		}: {
+			companyID: number;
+			provider: string;
+			board_identifier: string;
+			canonical_url: string;
+		}) =>
+			companiesApi.createBoard(companyID, {
+				provider,
+				board_identifier,
+				canonical_url,
+			}),
+	);
+}
+
+export function useUpdateCareerBoardDetails() {
+	return useCompanyListMutation(
+		({
+			companyID,
+			boardID,
+			provider,
+			board_identifier,
+			canonical_url,
+		}: {
+			companyID: number;
+			boardID: number;
+			provider: string;
+			board_identifier: string;
+			canonical_url: string;
+		}) =>
+			companiesApi.updateBoardDetails(companyID, boardID, {
+				provider,
+				board_identifier,
+				canonical_url,
+			}),
+	);
+}
+
+export function useDeleteCareerBoard() {
+	return useCompanyListMutation(
+		({ companyID, boardID }: { companyID: number; boardID: number }) =>
+			companiesApi.deleteBoard(companyID, boardID),
+	);
+}
+
 export function useDiscoverCareerBoards() {
 	return useMutation({
 		mutationFn: (careersURL: string) =>

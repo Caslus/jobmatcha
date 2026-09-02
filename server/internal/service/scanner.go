@@ -108,6 +108,10 @@ func (s *ScannerService) SupportsAdapter(atsType string) bool {
 	return s.engine.SupportsAdapter(atsType)
 }
 
+func (s *ScannerService) NormalizeCareerBoard(ctx context.Context, identity model.BoardIdentity) (model.BoardIdentity, error) {
+	return s.engine.NormalizeCareerBoard(ctx, identity)
+}
+
 func (s *ScannerService) DiscoverCareerBoards(ctx context.Context, careersURL string) (*model.CareerBoardDiscoveryResponse, error) {
 	result, err := discovery.NewService(discovery.NewHTTPClient(discovery.HTTPClientOptions{}), s.engine.Registry, discovery.Options{}).Discover(ctx, careersURL)
 	if err != nil {

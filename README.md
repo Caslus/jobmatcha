@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>Turn a noisy job search into a shortlist worth opening.</strong><br />
-  A private, self-hosted job tracker that scans a seeded company set and ranks roles around what you want next.
+A private, self-hosted job tracker that scans company career boards and ranks roles around what you want next.
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
 
 ![Jobmatcha dashboard showing ranked jobs and search preferences](docs/public/images/dashboard.png)
 
-Jobmatcha scans a seeded set of company career sites and turns them into an explainable, preference-based shortlist. The implemented scanners support Greenhouse and Workable. Your data lives in your own SQLite volume—there is no hosted account, analytics script, or required AI subscription.
+Jobmatcha starts with a seeded set of company career sites and turns them into an explainable, preference-based shortlist. You can discover supported boards from a careers page or manage companies and boards manually. The implemented scanners support Greenhouse and Workable. Your data lives in your own SQLite volume—there is no hosted account, analytics script, or required AI subscription.
 
 ## Start in two minutes
 
