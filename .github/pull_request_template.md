@@ -4,7 +4,13 @@
 
 ## Validation
 
-<!-- List commands run and any manual checks. Include screenshots for UI changes. -->
+<!-- List commands run and any manual checks. Application changes require:
+mise run "[Web] Check"
+mise run "[Web] Typecheck"
+mise run "[Coverage] Gate"
+mise run "[Web] Build"
+mise run "[Web] Run browser E2E tests"
+Include `mise run "[Docs] Build"` for documentation changes. Include screenshots for UI changes. -->
 
 ## Checklist
 
@@ -12,3 +18,4 @@
 - [ ] I did not edit generated files by hand.
 - [ ] I did not add secrets, databases, build artifacts, or personal data.
 - [ ] I considered migration, deployment, and backward-compatibility impacts.
+- [ ] I ran the CI-equivalent validation required for this change.

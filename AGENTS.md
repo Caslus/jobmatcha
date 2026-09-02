@@ -26,15 +26,44 @@ Use these tasks from the repository root:
 | Regenerate route tree | `mise run "[Web] Generate Routes"` |
 | Run frontend tests | `mise run "[Web] Run tests"` |
 | Run frontend coverage | `mise run "[Web] Run coverage"` |
+| Run frontend browser E2E tests | `mise run "[Web] Run browser E2E tests"` |
 | Run the backend in development | `mise run "[Server] Run dev"` |
 | Build the backend binary | `mise run "[Server] Build"` |
 | Regenerate API DTOs | `mise run "[Server] Generate DTOs"` |
 | Run focused API tests | `mise run "[Server] Run API tests"` |
 | Run all backend tests | `mise run "[Server] Run all tests"` |
 | Run backend coverage | `mise run "[Server] Run coverage"` |
+| Run CI-equivalent coverage gate | `mise run "[Coverage] Gate"` |
+| Build the documentation site | `mise run "[Docs] Build"` |
 
 Do not use a task to install dependencies; use the appropriate package manager
 only when dependencies actually need to change.
+
+## Required validation before a PR update
+
+For every application change, run these exact commands before opening or
+updating a pull request:
+
+```text
+mise run "[Web] Check"
+mise run "[Web] Typecheck"
+mise run "[Coverage] Gate"
+mise run "[Web] Build"
+mise run "[Web] Run browser E2E tests"
+```
+
+`[Coverage] Gate` is authoritative: it runs backend and frontend coverage and
+enforces the same weighted thresholds as CI. Running `[Server] Run coverage`
+alone only produces a report; it does not enforce the threshold.
+
+Run `mise run "[Docs] Build"` whenever `docs/`, README content, or other
+user-facing documentation changes. When a validation command fails, inspect
+and resolve its actual failure before handing off or updating the PR.
+
+Add or update focused tests for changed API handlers, service decisions,
+repository behavior, and user-visible frontend behavior. Regenerate DTOs and
+routes when their source inputs change, then include the generated output in
+the validation.
 
 ## Architecture
 
@@ -63,6 +92,8 @@ server/
   convention. Update DTOs first, regenerate Tygo output, then use the
   generated frontend types.
 - Use `slog` for operational logs and wrap returned errors with useful context.
+- Keep request context flowing from Gin through service and repository calls.
+- Use dependency injection rather than global database handles.
 
 ### Frontend (`web/`)
 
@@ -81,9 +112,10 @@ generated from them.
   `Record<string, unknown>` payloads.
 - Tailwind is configured through the Vite plugin; there is no
   `tailwind.config.js`.
-- There is no frontend test runner configured yet. For frontend changes, run
-  the Biome check and production build; add a test runner and scripts before
-  claiming component tests are available.
+- Vitest is configured for frontend unit tests. Run `[Web] Run tests` while
+  iterating; the required PR coverage gate runs the suite with V8 coverage.
+- Use Lucide for new interface icons and follow the existing Tailwind v4 and
+  shadcn-style component conventions.
 
 ## Static deployment contract
 

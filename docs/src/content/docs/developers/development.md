@@ -28,13 +28,17 @@ The frontend proxies `/api` to the local backend. Run `mise tasks` to discover e
 ## Checks
 
 ```bash
-mise run "[Server] Run all tests"
 mise run "[Web] Check"
 mise run "[Web] Typecheck"
-mise run "[Web] Run tests"
+mise run "[Coverage] Gate"
 mise run "[Web] Build"
+mise run "[Web] Run browser E2E tests"
 mise run "[Docs] Build"
 ```
+
+`[Coverage] Gate` is the CI-equivalent coverage check. It enforces the
+project's weighted coverage thresholds; `[Server] Run coverage` only creates
+a report and does not enforce those thresholds.
 
 API DTOs originate in `server/internal/model`. Update the source DTOs first, regenerate them with `mise run "[Server] Generate DTOs"`, and never edit generated frontend types or the route tree by hand.
 
