@@ -32,13 +32,9 @@ export const api = ky.create({
 	credentials: "same-origin",
 	hooks: {
 		beforeError: [
-			async ({ error }) => {
+			({ error }) => {
 				const httpError = error as HTTPError;
-				if (!httpError.response) return error;
-				const data = (await httpError.response
-					.clone()
-					.json()
-					.catch(() => undefined)) as ErrorResponse | undefined;
+				const data = httpError.data as ErrorResponse | undefined;
 				if (data?.error) {
 					httpError.message = data.error;
 				}
