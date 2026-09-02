@@ -65,6 +65,28 @@ repository behavior, and user-visible frontend behavior. Regenerate DTOs and
 routes when their source inputs change, then include the generated output in
 the validation.
 
+## GitHub issues and pull requests
+
+Before creating or updating a GitHub issue or pull request, read and use the
+applicable repository template:
+
+- Pull requests: `.github/pull_request_template.md`
+- Bug reports: `.github/ISSUE_TEMPLATE/bug_report.yml`
+- Feature requests: `.github/ISSUE_TEMPLATE/feature_request.yml`
+
+Keep the template's sections and answer every applicable prompt. For issues
+created outside GitHub's form UI, reproduce the form labels as Markdown
+headings so the report retains the same information.
+
+Submit PR and issue bodies as real Markdown, preferably with `gh`'s
+`--body-file` option. Never send literal escaped newline text such as `\\n`,
+and do not rely on a one-line shell string to represent a multi-paragraph
+description. Use blank lines around headings, lists, and code fences.
+
+After creating or editing a PR or issue, read it back with `gh pr view` or
+`gh issue view` and confirm that headings, lists, links, and code blocks render
+as intended. Correct the body before reporting the link to the user.
+
 ## Architecture
 
 ### Backend (`server/`)

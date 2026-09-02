@@ -2,9 +2,11 @@
 
 <!-- What changed, and why does it matter to a Jobmatcha user? -->
 
+<!-- Use real Markdown paragraphs and lists. Do not include literal \n escape sequences. -->
+
 ## Validation
 
-<!-- List commands run and any manual checks. Application changes require:
+<!-- List commands run and any manual checks using real Markdown. Application changes require:
 mise run "[Web] Check"
 mise run "[Web] Typecheck"
 mise run "[Coverage] Gate"
