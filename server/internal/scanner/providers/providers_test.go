@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -45,7 +46,7 @@ func TestGreenhouseFetchMapsFixtureJobs(t *testing.T) {
 		return fixtureResponse(req, http.StatusOK, jobs), nil
 	})}
 
-	roles, err := (&Greenhouse{HTTPClient: client}).Fetch(context.Background(), &model.Company{Name: "Acme", ATSSlug: "acme"})
+	roles, err := (&Greenhouse{HTTPClient: client}).Fetch(context.Background(), &model.Company{Name: "Acme"}, &model.CareerBoard{BoardIdentifier: "acme"})
 	if err != nil {
 		t.Fatalf("Fetch() error = %v", err)
 	}
@@ -69,6 +70,40 @@ func TestGreenhouseFetchMapsFixtureJobs(t *testing.T) {
 	}
 }
 
+func TestGreenhouseRecognizesEquivalentBoardURLsAndValidates(t *testing.T) {
+	provider := &Greenhouse{HTTPClient: &http.Client{Transport: fixtureTransport(func(req *http.Request) (*http.Response, error) {
+		if req.URL.String() != "https://boards.greenhouse.io/acme" {
+			t.Fatalf("validation request = %s", req.URL)
+		}
+		return fixtureResponse(req, http.StatusOK, nil), nil
+	})}}
+	for _, raw := range []string{"https://boards.greenhouse.io/Acme/jobs/1", "https://job-boards.greenhouse.io/acme/"} {
+		u, err := url.Parse(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		identity, ok := provider.RecognizeBoard(u)
+		if !ok || identity.BoardIdentifier != "acme" || identity.CanonicalURL != "https://boards.greenhouse.io/acme" {
+			t.Fatalf("recognition for %s = %#v, %v", raw, identity, ok)
+		}
+		if err := provider.ValidateBoard(context.Background(), identity); err != nil {
+			t.Fatalf("validate %s: %v", raw, err)
+		}
+	}
+	for _, raw := range []string{"https://example.test/acme", "https://boards.greenhouse.io/"} {
+		u, _ := url.Parse(raw)
+		if _, ok := provider.RecognizeBoard(u); ok {
+			t.Fatalf("unexpected match for %s", raw)
+		}
+	}
+	failing := &Greenhouse{HTTPClient: &http.Client{Transport: fixtureTransport(func(req *http.Request) (*http.Response, error) {
+		return fixtureResponse(req, http.StatusNotFound, nil), nil
+	})}}
+	if err := failing.ValidateBoard(context.Background(), model.BoardIdentity{Provider: "greenhouse", BoardIdentifier: "missing", CanonicalURL: "https://boards.greenhouse.io/missing"}); err == nil {
+		t.Fatal("expected validation failure")
+	}
+}
+
 func TestWorkableFetchFallsBackToWidgetDescriptionAndMergesLocations(t *testing.T) {
 	jobs := fixtureBody(t, "workable_jobs.json")
 	client := &http.Client{Transport: fixtureTransport(func(req *http.Request) (*http.Response, error) {
@@ -83,7 +118,7 @@ func TestWorkableFetchFallsBackToWidgetDescriptionAndMergesLocations(t *testing.
 		}
 	})}
 
-	roles, err := (&Workable{HTTPClient: client}).Fetch(context.Background(), &model.Company{Name: "Acme", ATSSlug: "acme"})
+	roles, err := (&Workable{HTTPClient: client}).Fetch(context.Background(), &model.Company{Name: "Acme"}, &model.CareerBoard{BoardIdentifier: "acme"})
 	if err != nil {
 		t.Fatalf("Fetch() error = %v", err)
 	}
@@ -104,5 +139,39 @@ func TestWorkableFetchFallsBackToWidgetDescriptionAndMergesLocations(t *testing.
 	wantPostedAt := time.Date(2026, time.August, 21, 0, 0, 0, 0, time.UTC)
 	if role.PostedAt == nil || !role.PostedAt.Equal(wantPostedAt) {
 		t.Fatalf("PostedAt = %v, want %v", role.PostedAt, wantPostedAt)
+	}
+}
+
+func TestWorkableRecognizesAndValidatesBoards(t *testing.T) {
+	provider := &Workable{HTTPClient: &http.Client{Transport: fixtureTransport(func(req *http.Request) (*http.Response, error) {
+		if req.URL.String() != "https://apply.workable.com/api/v1/widget/accounts/acme" {
+			t.Fatalf("validation request = %s", req.URL)
+		}
+		return fixtureResponse(req, http.StatusOK, nil), nil
+	})}}
+	for _, raw := range []string{"https://apply.workable.com/Acme/", "http://apply.workable.com/acme/jobs/view/123"} {
+		u, err := url.Parse(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		identity, ok := provider.RecognizeBoard(u)
+		if !ok || identity.BoardIdentifier != "acme" || identity.CanonicalURL != "https://apply.workable.com/acme/" {
+			t.Fatalf("recognition for %s = %#v, %v", raw, identity, ok)
+		}
+		if err := provider.ValidateBoard(context.Background(), identity); err != nil {
+			t.Fatalf("validate %s: %v", raw, err)
+		}
+	}
+	for _, raw := range []string{"https://jobs.workable.com/acme", "https://apply.workable.com/"} {
+		u, _ := url.Parse(raw)
+		if _, ok := provider.RecognizeBoard(u); ok {
+			t.Fatalf("unexpected match for %s", raw)
+		}
+	}
+	failing := &Workable{HTTPClient: &http.Client{Transport: fixtureTransport(func(req *http.Request) (*http.Response, error) {
+		return fixtureResponse(req, http.StatusBadGateway, nil), nil
+	})}}
+	if err := failing.ValidateBoard(context.Background(), model.BoardIdentity{Provider: "workable", BoardIdentifier: "missing"}); err == nil {
+		t.Fatal("expected validation failure")
 	}
 }

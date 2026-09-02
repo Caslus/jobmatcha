@@ -21,9 +21,13 @@ func (r *RoleRepo) List(page, perPage int) ([]model.Role, int64, error) {
 	return roles, total, nil
 }
 
-func (r *RoleRepo) ListAll() ([]model.Role, error) {
+func (r *RoleRepo) ListForEnabledCompanies() ([]model.Role, error) {
 	var roles []model.Role
-	if err := r.db.Preload("Company").Order("created_at DESC").Find(&roles).Error; err != nil {
+	if err := r.db.
+		Joins("JOIN companies ON companies.id = roles.company_id AND companies.active = ?", true).
+		Preload("Company").
+		Order("roles.created_at DESC").
+		Find(&roles).Error; err != nil {
 		return nil, err
 	}
 	return roles, nil
@@ -56,6 +60,16 @@ func (r *RoleRepo) BulkCreate(roles []model.Role) error {
 func (r *RoleRepo) CountAll() (int64, error) {
 	var count int64
 	if err := r.db.Model(&model.Role{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *RoleRepo) CountForEnabledCompanies() (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.Role{}).
+		Joins("JOIN companies ON companies.id = roles.company_id AND companies.active = ?", true).
+		Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

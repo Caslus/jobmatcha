@@ -8,7 +8,35 @@ import (
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
 	"github.com/caslus/jobmatcha/internal/testutil"
+	"github.com/caslus/jobmatcha/migrations"
 )
+
+func TestCareerBoardBackfillPreservesLegacyCompanyAndRoles(t *testing.T) {
+	db := testutil.Database(t)
+	repos := testutil.Repositories(db)
+	company := &model.Company{Name: "Legacy", CareersURL: "https://boards.greenhouse.io/legacy", ATSType: "greenhouse", ATSSlug: "legacy", Active: true}
+	if err := db.Create(company).Error; err != nil {
+		t.Fatalf("create company: %v", err)
+	}
+	role := &model.Role{CompanyID: company.ID, URLHash: "legacy-role", URL: "https://example.test/jobs/1", Title: "Legacy role"}
+	if err := db.Create(role).Error; err != nil {
+		t.Fatalf("create role: %v", err)
+	}
+	if err := migrations.Migrate(db); err != nil {
+		t.Fatalf("rerun migration: %v", err)
+	}
+	boards, err := repos.CareerBoard.ListForCompany(company.ID)
+	if err != nil || len(boards) != 1 {
+		t.Fatalf("boards = %#v, %v", boards, err)
+	}
+	if boards[0].Provider != "greenhouse" || boards[0].BoardIdentifier != "legacy" || !boards[0].Active {
+		t.Fatalf("board = %#v", boards[0])
+	}
+	var stored model.Role
+	if err := db.First(&stored, role.ID).Error; err != nil || stored.CompanyID != company.ID {
+		t.Fatalf("role ownership = %#v, %v", stored, err)
+	}
+}
 
 func TestConfigAndScanJobRepositoriesPersistLifecycle(t *testing.T) {
 	db := testutil.Database(t)
@@ -144,7 +172,7 @@ func TestRoleRepositoryPersistsListsAndPatchesRoles(t *testing.T) {
 	if err != nil || total != 3 || len(secondPage) != 1 {
 		t.Fatalf("second page = %#v, total %d, err %v", secondPage, total, err)
 	}
-	all, err := repos.Role.ListAll()
+	all, err := repos.Role.ListForEnabledCompanies()
 	if err != nil || len(all) != 3 || all[0].Company.ID != company.ID {
 		t.Fatalf("all roles = %#v, %v", all, err)
 	}

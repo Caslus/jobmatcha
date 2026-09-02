@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// Engine orchestrates scanning all active companies through their ATS providers.
+// Engine orchestrates scanning enabled boards owned by active companies.
 type Engine struct {
 	DB               *gorm.DB
 	Repos            *repository.Repositories
@@ -54,6 +54,20 @@ func (e *Engine) SupportsAdapter(atsType string) bool {
 	return e.Registry.Has(atsType)
 }
 
+// NormalizeCareerBoard verifies that the URL belongs to the requested
+// registered provider, returns its canonical identity, and confirms that the
+// provider can reach the board.
+func (e *Engine) NormalizeCareerBoard(ctx context.Context, identity model.BoardIdentity) (model.BoardIdentity, error) {
+	normalized, ok := e.Registry.Recognize(identity.CanonicalURL)
+	if !ok || normalized.Provider != identity.Provider || normalized.BoardIdentifier != identity.BoardIdentifier {
+		return model.BoardIdentity{}, fmt.Errorf("invalid %s career board", identity.Provider)
+	}
+	if err := e.Registry.Validate(ctx, normalized); err != nil {
+		return model.BoardIdentity{}, err
+	}
+	return normalized, nil
+}
+
 // ScanResult summarizes a single company scan.
 type ScanResult struct {
 	CompanyName string `json:"company_name"`
@@ -64,50 +78,50 @@ type ScanResult struct {
 
 // ScanAll scans all active companies concurrently and returns per-company results.
 func (e *Engine) ScanAll(ctx context.Context) []ScanResult {
-	companies, err := e.Repos.Company.ListActive()
+	boards, err := e.Repos.CareerBoard.ListEnabledWithCompanies()
 	if err != nil {
 		return []ScanResult{{Error: fmt.Sprintf("load companies: %v", err)}}
 	}
 
-	results := make([]ScanResult, 0, len(companies))
+	results := make([]ScanResult, 0, len(boards))
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var completed atomic.Int32
 
-	for _, company := range companies {
+	for _, board := range boards {
 		wg.Add(1)
 		e.Semaphore <- struct{}{} // acquire semaphore
 
-		go func(c model.Company) {
+		go func(b model.CareerBoard) {
 			defer wg.Done()
 			defer func() { <-e.Semaphore }() // release semaphore
 
-			result := e.scanCompany(ctx, &c)
+			result := e.scanBoard(ctx, &b.Company, &b)
 			mu.Lock()
 			results = append(results, result)
 			mu.Unlock()
 
 			n := completed.Add(1)
 			if e.ProgressCallback != nil {
-				e.ProgressCallback(int(n), len(companies))
+				e.ProgressCallback(int(n), len(boards))
 			}
-		}(company)
+		}(board)
 	}
 
 	wg.Wait()
 	return results
 }
 
-// scanCompany fetches roles for a single company via its provider and upserts them.
-func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanResult {
+// scanBoard fetches roles for a single board and upserts them under its company.
+func (e *Engine) scanBoard(ctx context.Context, company *model.Company, board *model.CareerBoard) ScanResult {
 	result := ScanResult{CompanyName: company.Name}
 	attemptedAt := time.Now().UTC()
-	if err := e.Repos.Company.RecordScanAttempt(company.ID, attemptedAt); err != nil {
-		slog.Error("scanner: record attempt", "company", company.Name, "error", err)
+	if err := e.Repos.CareerBoard.RecordScanAttempt(board.ID, attemptedAt); err != nil {
+		slog.Error("scanner: record attempt", "company", company.Name, "board", board.ID, "error", err)
 	}
 
 	// Resolve provider by ATS type
-	atsType := company.ATSType
+	atsType := board.Provider
 	if atsType == "" {
 		atsType = "generic"
 	}
@@ -115,24 +129,24 @@ func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanRe
 	provider, ok := e.Registry.Get(atsType)
 	if !ok {
 		result.Error = fmt.Sprintf("no provider for ats_type=%q", atsType)
-		if err := e.Repos.Company.RecordScanFailure(company.ID, result.Error); err != nil {
-			slog.Error("scanner: record provider failure", "company", company.Name, "error", err)
+		if err := e.Repos.CareerBoard.RecordScanFailure(board.ID, result.Error); err != nil {
+			slog.Error("scanner: record provider failure", "company", company.Name, "board", board.ID, "error", err)
 		}
 		return result
 	}
 
 	// Fetch roles
-	roles, err := provider.Fetch(ctx, company)
+	roles, err := provider.Fetch(ctx, company, board)
 	if err != nil {
 		result.Error = err.Error()
-		if recordErr := e.Repos.Company.RecordScanFailure(company.ID, result.Error); recordErr != nil {
-			slog.Error("scanner: record fetch failure", "company", company.Name, "error", recordErr)
+		if recordErr := e.Repos.CareerBoard.RecordScanFailure(board.ID, result.Error); recordErr != nil {
+			slog.Error("scanner: record fetch failure", "company", company.Name, "board", board.ID, "error", recordErr)
 		}
 		return result
 	}
 
-	if err := e.Repos.Company.RecordScanSuccess(company.ID, attemptedAt); err != nil {
-		slog.Error("scanner: record success", "company", company.Name, "error", err)
+	if err := e.Repos.CareerBoard.RecordScanSuccess(board.ID, attemptedAt); err != nil {
+		slog.Error("scanner: record success", "company", company.Name, "board", board.ID, "error", err)
 	}
 
 	// Upsert roles — count new vs existing
@@ -165,8 +179,8 @@ func (e *Engine) scanCompany(ctx context.Context, company *model.Company) ScanRe
 	}
 
 	if newCount > 0 {
-		if err := e.Repos.Company.RecordNewRoleDiscovery(company.ID, attemptedAt); err != nil {
-			slog.Error("scanner: record discovery", "company", company.Name, "error", err)
+		if err := e.Repos.CareerBoard.RecordNewRoleDiscovery(board.ID, attemptedAt); err != nil {
+			slog.Error("scanner: record discovery", "company", company.Name, "board", board.ID, "error", err)
 		}
 	}
 

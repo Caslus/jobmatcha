@@ -6,9 +6,14 @@ import type {
 	AIValidateKeyResponse,
 	AuthLoginResponse,
 	AuthStatusResponse,
+	CareerBoardDiscoveryRequest,
+	CareerBoardDiscoveryResponse,
+	CareerBoardRegistrationRequest,
+	CareerBoardUpsertRequest,
 	ChangePasswordRequest,
 	CompanyActiveUpdateRequest,
 	CompanyBulkActiveUpdateRequest,
+	CompanyDetailsUpdateRequest,
 	CompanyListItem,
 	CompanyListResponse,
 	ErrorResponse,
@@ -23,18 +28,30 @@ import type {
 } from "@/types/api.gen";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const responseErrors = new WeakMap<Request, string>();
 
 export const api = ky.create({
 	prefix: API_BASE,
 	credentials: "same-origin",
 	hooks: {
+		afterResponse: [
+			async ({ request, response }) => {
+				if (!response.ok) {
+					try {
+						const data = (await response.clone().json()) as ErrorResponse;
+						if (data?.error) responseErrors.set(request, data.error);
+					} catch {
+						// Some error responses have no JSON body. Preserve Ky's default message.
+					}
+				}
+			},
+		],
 		beforeError: [
-			({ error }) => {
+			({ error, request }) => {
 				const httpError = error as HTTPError;
 				const data = httpError.data as ErrorResponse | undefined;
-				if (data?.error) {
-					httpError.message = data.error;
-				}
+				const message = data?.error ?? responseErrors.get(request);
+				if (message) httpError.message = message;
 				return error;
 			},
 		],
@@ -94,8 +111,43 @@ export const companiesApi = {
 	list: () => api.get("companies").json<CompanyListResponse>(),
 	updateActive: (id: number, data: CompanyActiveUpdateRequest) =>
 		api.patch(`companies/${id}`, { json: data }).json<CompanyListItem>(),
+	updateBoardActive: (
+		companyID: number,
+		boardID: number,
+		data: CompanyActiveUpdateRequest,
+	) =>
+		api
+			.patch(`companies/${companyID}/boards/${boardID}`, { json: data })
+			.json<CompanyListItem>(),
 	updateActiveBulk: (data: CompanyBulkActiveUpdateRequest) =>
 		api.put("companies/active", { json: data }).json<CompanyListResponse>(),
+	updateDetails: (id: number, data: CompanyDetailsUpdateRequest) =>
+		api
+			.patch(`companies/${id}/details`, { json: data })
+			.json<CompanyListItem>(),
+	delete: (id: number) => api.delete(`companies/${id}`).json(),
+	createBoard: (companyID: number, data: CareerBoardUpsertRequest) =>
+		api
+			.post(`companies/${companyID}/boards`, { json: data })
+			.json<CompanyListItem>(),
+	updateBoardDetails: (
+		companyID: number,
+		boardID: number,
+		data: CareerBoardUpsertRequest,
+	) =>
+		api
+			.patch(`companies/${companyID}/boards/${boardID}/details`, { json: data })
+			.json<CompanyListItem>(),
+	deleteBoard: (companyID: number, boardID: number) =>
+		api
+			.delete(`companies/${companyID}/boards/${boardID}`)
+			.json<CompanyListItem>(),
+	discover: (data: CareerBoardDiscoveryRequest) =>
+		api
+			.post("companies/discover", { json: data, timeout: 120_000 })
+			.json<CareerBoardDiscoveryResponse>(),
+	register: (data: CareerBoardRegistrationRequest) =>
+		api.post("companies/register", { json: data }).json<CompanyListResponse>(),
 };
 
 // Settings

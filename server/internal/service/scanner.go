@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/caslus/jobmatcha/internal/discovery"
 	"github.com/caslus/jobmatcha/internal/model"
 	"github.com/caslus/jobmatcha/internal/repository"
 	"github.com/caslus/jobmatcha/internal/scanner"
@@ -107,6 +108,25 @@ func (s *ScannerService) SupportsAdapter(atsType string) bool {
 	return s.engine.SupportsAdapter(atsType)
 }
 
+func (s *ScannerService) NormalizeCareerBoard(ctx context.Context, identity model.BoardIdentity) (model.BoardIdentity, error) {
+	return s.engine.NormalizeCareerBoard(ctx, identity)
+}
+
+func (s *ScannerService) DiscoverCareerBoards(ctx context.Context, careersURL string) (*model.CareerBoardDiscoveryResponse, error) {
+	result, err := discovery.NewService(discovery.NewHTTPClient(discovery.HTTPClientOptions{}), s.engine.Registry, discovery.Options{}).Discover(ctx, careersURL)
+	if err != nil {
+		return nil, err
+	}
+	response := &model.CareerBoardDiscoveryResponse{EmployerNameSuggestion: result.EmployerNameSuggestion, Incomplete: result.Incomplete, Candidates: make([]model.CareerBoardDiscoveryCandidate, len(result.Candidates))}
+	for i, candidate := range result.Candidates {
+		response.Candidates[i] = model.CareerBoardDiscoveryCandidate{Provider: candidate.Identity.Provider, BoardIdentifier: candidate.Identity.BoardIdentifier, CanonicalURL: candidate.Identity.CanonicalURL, EvidenceURLs: candidate.EvidenceURLs, ValidationStatus: candidate.ValidationStatus, ValidationError: candidate.ValidationError}
+	}
+	if response.EmployerNameSuggestion == "" && len(response.Candidates) > 0 {
+		response.EmployerNameSuggestion = response.Candidates[0].BoardIdentifier
+	}
+	return response, nil
+}
+
 func resultsToDTO(results []scanner.ScanResult) []model.ScanResult {
 	dtos := make([]model.ScanResult, len(results))
 	for i, r := range results {
@@ -149,4 +169,10 @@ type Scanner interface {
 	GetJob(uint) (*model.ScanJobResponse, error)
 	GetLatestJob() (*model.ScanJobResponse, error)
 	SupportsAdapter(string) bool
+}
+
+// CareerBoardDiscoverer is the optional scanner capability used by discovery
+// endpoints; scheduler test seams only need Scanner.
+type CareerBoardDiscoverer interface {
+	DiscoverCareerBoards(context.Context, string) (*model.CareerBoardDiscoveryResponse, error)
 }

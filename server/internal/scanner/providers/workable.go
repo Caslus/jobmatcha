@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/caslus/jobmatcha/internal/model"
@@ -38,8 +39,40 @@ type Workable struct {
 
 func (p *Workable) Name() string { return "workable" }
 
-func (p *Workable) Fetch(ctx context.Context, company *model.Company) ([]*model.Role, error) {
-	slug := company.ATSSlug
+func (p *Workable) RecognizeBoard(u *url.URL) (model.BoardIdentity, bool) {
+	if strings.ToLower(u.Hostname()) != "apply.workable.com" || (u.Scheme != "http" && u.Scheme != "https") {
+		return model.BoardIdentity{}, false
+	}
+	slug := strings.Split(strings.Trim(u.EscapedPath(), "/"), "/")[0]
+	if slug == "" {
+		return model.BoardIdentity{}, false
+	}
+	decoded, err := url.PathUnescape(slug)
+	if err != nil || strings.Contains(decoded, "/") {
+		return model.BoardIdentity{}, false
+	}
+	return model.BoardIdentity{Provider: p.Name(), BoardIdentifier: strings.ToLower(decoded), CanonicalURL: "https://apply.workable.com/" + url.PathEscape(strings.ToLower(decoded)) + "/"}, true
+}
+
+func (p *Workable) ValidateBoard(ctx context.Context, board model.BoardIdentity) error {
+	endpoint := fmt.Sprintf("https://apply.workable.com/api/v1/widget/accounts/%s", url.PathEscape(board.BoardIdentifier))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("workable %s: build validation request: %w", board.BoardIdentifier, err)
+	}
+	resp, err := p.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("workable %s: validate: %w", board.BoardIdentifier, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("workable %s: validation HTTP %d", board.BoardIdentifier, resp.StatusCode)
+	}
+	return nil
+}
+
+func (p *Workable) Fetch(ctx context.Context, company *model.Company, board *model.CareerBoard) ([]*model.Role, error) {
+	slug := board.BoardIdentifier
 	if slug == "" {
 		return nil, fmt.Errorf("workable: no slug for company %s", company.Name)
 	}

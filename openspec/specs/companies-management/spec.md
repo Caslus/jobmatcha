@@ -7,11 +7,19 @@ Give users a transparent, controllable view of every registered job source, incl
 ## Requirements
 
 ### Requirement: Registered companies are visible and manageable
-The system SHALL provide authenticated users with a Companies view containing every registered company, including disabled companies. Each company entry SHALL show its name, location when available, configured ATS adapter, and whether it is enabled for future scans. The system SHALL allow a user to enable or disable a company, and the updated state SHALL govern its inclusion in subsequent scans.
+The system SHALL provide authenticated users with a Companies view containing every registered company, including disabled companies. The view SHALL use a centered, compact company index rather than a full-width data table. Each company entry SHALL show its name, location when available, an explicit board-navigation control with career-board count, total job count across its boards, aggregate freshness, and whether the company is enabled for future scans. The index SHALL provide a compact, visibly interactive sort control for ordering companies by job count, board count, name, location, or recent activity. Latest scan and discovery timestamps SHALL remain available in the board-management modal rather than competing with the company identity in every list row. Company selection and bulk actions SHALL use visually consistent, clearly interactive controls. Adapter and per-board freshness details SHALL be shown only in the company's board-management modal, where each career-board source is independently identifiable and manageable. The modal SHALL expose each board's provider, identifier, canonical URL, enabled state, adapter health, freshness, latest scan, latest new-role discovery, and failure detail when present. Adapter health and freshness SHALL use semantic icons and concise plain-language explanations. Board activity timestamps SHALL display relative time and expose their full timestamp accessibly. The system SHALL allow a user to enable or disable a company or one of its career-board sources; the updated state SHALL immediately be reflected in the board-management modal and SHALL govern inclusion of the affected sources in subsequent scans.
 
 #### Scenario: Viewing all registered companies
 - **WHEN** an authenticated user opens the Companies view
-- **THEN** the system displays every registered company with its current enabled state and source metadata
+- **THEN** the system displays every registered company with its company-level operational summary and enabled state
+
+#### Scenario: Viewing board-specific details
+- **WHEN** a user opens a company's board-management modal
+- **THEN** the system displays each board's source identity, URL, explained adapter health and freshness states, relative activity timestamps, and any scan failure independently
+
+#### Scenario: Sorting registered companies
+- **WHEN** a user selects a company-index sort option
+- **THEN** the system orders the compact company index by the selected job count, board count, name, location, or recent activity criterion
 
 #### Scenario: Disabling a company
 - **WHEN** a user disables an enabled company
@@ -22,11 +30,11 @@ The system SHALL provide authenticated users with a Companies view containing ev
 - **THEN** the system persists the enabled state and includes that company in later scans when its adapter is supported
 
 ### Requirement: Companies can be sorted by displayed information
-The Companies view SHALL allow users to sort the full registered-company list by every displayed company attribute: company name, location, configured adapter, enabled state, role count, adapter status, freshness status, latest scan time, and latest new-role-discovery time. The system SHALL make the active sort attribute and direction apparent to the user with distinct ascending and descending indicators. The initial sort SHALL rank companies by role count descending.
+The Companies view SHALL allow users to sort the compact registered-company index by job count, board count, company name, location, and recent activity. The system SHALL make the active sort attribute and direction apparent to the user with distinct ascending and descending indicators. The initial sort SHALL rank companies by role count descending.
 
-#### Scenario: Sorting by adapter status
-- **WHEN** a user selects adapter status as the sort attribute
-- **THEN** the system reorders the full Companies list by adapter status and indicates the selected sort direction
+#### Scenario: Sorting by board count
+- **WHEN** a user selects board count as the sort attribute
+- **THEN** the system reorders the compact Companies index by career-board count and indicates the selected sort direction
 
 #### Scenario: Reversing a sort
 - **WHEN** a user selects the active sort attribute again

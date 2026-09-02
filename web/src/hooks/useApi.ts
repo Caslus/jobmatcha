@@ -51,6 +51,23 @@ export function useUpdateCompanyActive() {
 	});
 }
 
+export function useUpdateCareerBoardActive() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			companyID,
+			boardID,
+			active,
+		}: {
+			companyID: number;
+			boardID: number;
+			active: boolean;
+		}) => companiesApi.updateBoardActive(companyID, boardID, { active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
 export function useUpdateCompaniesActiveBulk() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -61,6 +78,98 @@ export function useUpdateCompaniesActiveBulk() {
 			companyIDs: number[];
 			active: boolean;
 		}) => companiesApi.updateActiveBulk({ company_ids: companyIDs, active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
+function useCompanyListMutation<TData, TVariables>(
+	mutationFn: (variables: TVariables) => Promise<TData>,
+) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn,
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
+export function useUpdateCompanyDetails() {
+	return useCompanyListMutation(
+		({ id, name, location }: { id: number; name: string; location: string }) =>
+			companiesApi.updateDetails(id, { name, location }),
+	);
+}
+
+export function useDeleteCompany() {
+	return useCompanyListMutation(({ id }: { id: number }) =>
+		companiesApi.delete(id),
+	);
+}
+
+export function useCreateCareerBoard() {
+	return useCompanyListMutation(
+		({
+			companyID,
+			provider,
+			board_identifier,
+			canonical_url,
+		}: {
+			companyID: number;
+			provider: string;
+			board_identifier: string;
+			canonical_url: string;
+		}) =>
+			companiesApi.createBoard(companyID, {
+				provider,
+				board_identifier,
+				canonical_url,
+			}),
+	);
+}
+
+export function useUpdateCareerBoardDetails() {
+	return useCompanyListMutation(
+		({
+			companyID,
+			boardID,
+			provider,
+			board_identifier,
+			canonical_url,
+		}: {
+			companyID: number;
+			boardID: number;
+			provider: string;
+			board_identifier: string;
+			canonical_url: string;
+		}) =>
+			companiesApi.updateBoardDetails(companyID, boardID, {
+				provider,
+				board_identifier,
+				canonical_url,
+			}),
+	);
+}
+
+export function useDeleteCareerBoard() {
+	return useCompanyListMutation(
+		({ companyID, boardID }: { companyID: number; boardID: number }) =>
+			companiesApi.deleteBoard(companyID, boardID),
+	);
+}
+
+export function useDiscoverCareerBoards() {
+	return useMutation({
+		mutationFn: (careersURL: string) =>
+			companiesApi.discover({ careers_url: careersURL }),
+	});
+}
+
+export function useRegisterCareerBoards() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (data: Parameters<typeof companiesApi.register>[0]) =>
+			companiesApi.register(data),
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
 	});

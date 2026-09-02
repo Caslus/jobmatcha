@@ -15,6 +15,7 @@ func Migrate(db *gorm.DB) error {
 
 	if err := db.AutoMigrate(
 		&model.Company{},
+		&model.CareerBoard{},
 		&model.Role{},
 		&model.Config{},
 		&model.Session{},
@@ -25,9 +26,35 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
+	if err := backfillCareerBoards(db); err != nil {
+		return err
+	}
+
 	// Backfill columns that may not exist on older databases
 	// (GORM AutoMigrate doesn't always add columns to existing SQLite tables)
 	return backfillConfigColumns(db)
+}
+
+// backfillCareerBoards preserves legacy single-board sources after upgrading.
+// It is idempotent because provider and board_identifier have a unique key.
+func backfillCareerBoards(db *gorm.DB) error {
+	var companies []model.Company
+	if err := db.Where("ats_type <> '' AND ats_slug <> ''").Find(&companies).Error; err != nil {
+		return fmt.Errorf("loading legacy company boards: %w", err)
+	}
+	for _, company := range companies {
+		board := model.CareerBoard{
+			CompanyID: company.ID, Provider: company.ATSType, BoardIdentifier: company.ATSSlug,
+			CanonicalURL: company.CareersURL, Active: company.Active,
+			LastScannedAt: company.LastScannedAt, LastScanAttemptAt: company.LastScanAttemptAt,
+			LastSuccessfulScanAt: company.LastSuccessfulScanAt, LastScanFailureDetail: company.LastScanFailureDetail,
+			LastNewRoleDiscoveryAt: company.LastNewRoleDiscoveryAt,
+		}
+		if err := db.Where("provider = ? AND board_identifier = ?", board.Provider, board.BoardIdentifier).FirstOrCreate(&board).Error; err != nil {
+			return fmt.Errorf("backfilling company %d career board: %w", company.ID, err)
+		}
+	}
+	return nil
 }
 
 // SQLite cannot add a NOT NULL column without a default value to a table that

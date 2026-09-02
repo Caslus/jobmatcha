@@ -3,7 +3,17 @@ title: Scanning companies
 description: Run scans on demand or on a schedule.
 ---
 
-Jobmatcha seeds a fixed set of companies. At present, only the Greenhouse and Workable entries have implemented scanners; the other seeded entries remain inactive. The dashboard does not add or edit company career sites. Start a scan immediately or enable scheduled scanning.
+Jobmatcha begins with a seeded set of companies. Greenhouse and Workable are the supported scanners; unsupported seeded entries remain inactive. Start a scan immediately or enable scheduled scanning.
+
+## Manage sources
+
+Open **Companies** to manage the sources that feed your shortlist:
+
+- Use **Discover boards** with a public careers URL to find supported job boards. Review the suggestions, choose the boards to keep, and add them under one company or separately.
+- Open a company's board count to add a board manually, edit its provider, identifier, or canonical URL, toggle it, or remove it.
+- Edit a company's name and location from its edit control. You can disable a company or individual board without deleting it.
+
+Disabled companies and boards are skipped by future scans, and their roles disappear from the Jobs page. Removing a company or board also keeps its previously collected roles as historical records, but they remain out of the active shortlist.
 
 ## Scheduled scans
 

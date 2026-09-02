@@ -2,14 +2,27 @@ package model
 
 import "time"
 
-// CompanyListItem is the management view of one registered job source.
+// CompanyListItem is the company-level management summary.
 type CompanyListItem struct {
+	ID                     uint                  `json:"id"`
+	Name                   string                `json:"name"`
+	Location               string                `json:"location"`
+	Active                 bool                  `json:"active"`
+	BoardCount             int                   `json:"board_count"`
+	RoleCount              int64                 `json:"role_count"`
+	FreshnessStatus        string                `json:"freshness_status"`
+	LastScanAttemptAt      *time.Time            `json:"last_scan_attempt_at"`
+	LastNewRoleDiscoveryAt *time.Time            `json:"last_new_role_discovery_at"`
+	CareerBoards           []CareerBoardListItem `json:"career_boards"`
+}
+
+// CareerBoardListItem is one independently managed source for a company.
+type CareerBoardListItem struct {
 	ID                     uint       `json:"id"`
-	Name                   string     `json:"name"`
-	Location               string     `json:"location"`
-	ATSType                string     `json:"ats_type"`
+	Provider               string     `json:"provider"`
+	BoardIdentifier        string     `json:"board_identifier"`
+	CanonicalURL           string     `json:"canonical_url"`
 	Active                 bool       `json:"active"`
-	RoleCount              int64      `json:"role_count"`
 	AdapterStatus          string     `json:"adapter_status"`
 	FreshnessStatus        string     `json:"freshness_status"`
 	LastScanAttemptAt      *time.Time `json:"last_scan_attempt_at"`
@@ -26,7 +39,59 @@ type CompanyActiveUpdateRequest struct {
 	Active *bool `json:"active" binding:"required"`
 }
 
+type CompanyDetailsUpdateRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Location string `json:"location"`
+}
+
 type CompanyBulkActiveUpdateRequest struct {
 	CompanyIDs []uint `json:"company_ids" binding:"required,min=1"`
 	Active     *bool  `json:"active" binding:"required"`
+}
+
+type CareerBoardActiveUpdateRequest struct {
+	Active *bool `json:"active" binding:"required"`
+}
+
+// CareerBoardUpsertRequest describes a manually managed board source. The
+// server normalizes these fields through the registered provider before it is
+// persisted.
+type CareerBoardUpsertRequest struct {
+	Provider        string `json:"provider" binding:"required"`
+	BoardIdentifier string `json:"board_identifier" binding:"required"`
+	CanonicalURL    string `json:"canonical_url" binding:"required"`
+}
+
+type CareerBoardDiscoveryRequest struct {
+	CareersURL string `json:"careers_url" binding:"required"`
+}
+
+type CareerBoardDiscoveryCandidate struct {
+	Provider         string   `json:"provider"`
+	BoardIdentifier  string   `json:"board_identifier"`
+	CanonicalURL     string   `json:"canonical_url"`
+	EvidenceURLs     []string `json:"evidence_urls"`
+	ValidationStatus string   `json:"validation_status"`
+	ValidationError  string   `json:"validation_error,omitempty"`
+}
+
+type CareerBoardDiscoveryResponse struct {
+	Candidates             []CareerBoardDiscoveryCandidate `json:"candidates"`
+	EmployerNameSuggestion string                          `json:"employer_name_suggestion"`
+	Incomplete             bool                            `json:"incomplete"`
+}
+
+type CareerBoardRegistration struct {
+	CompanyName     string `json:"company_name" binding:"required"`
+	CareersURL      string `json:"careers_url" binding:"required"`
+	Location        string `json:"location"`
+	Region          string `json:"region"`
+	Provider        string `json:"provider" binding:"required"`
+	BoardIdentifier string `json:"board_identifier" binding:"required"`
+	CanonicalURL    string `json:"canonical_url" binding:"required"`
+	Separate        bool   `json:"separate"`
+}
+
+type CareerBoardRegistrationRequest struct {
+	Candidates []CareerBoardRegistration `json:"candidates"`
 }

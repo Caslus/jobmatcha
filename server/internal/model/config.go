@@ -22,9 +22,9 @@ func (s *StringSlice) Scan(value interface{}) error {
 }
 
 type Config struct {
-	ID               uint   `gorm:"primaryKey;check:id=1" json:"-"`
-	PasswordHash     string `gorm:"not null;default:''" json:"-"`
-	SetupComplete    bool   `gorm:"not null;default:false" json:"setup_complete"`
+	ID            uint   `gorm:"primaryKey;check:id=1" json:"-"`
+	PasswordHash  string `gorm:"not null;default:''" json:"-"`
+	SetupComplete bool   `gorm:"not null;default:false" json:"setup_complete"`
 
 	// OIDC (optional)
 	OIDCEnabled      bool   `gorm:"not null;default:false" json:"oidc_enabled"`

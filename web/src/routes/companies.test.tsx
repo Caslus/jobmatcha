@@ -13,42 +13,39 @@ vi.mock("../hooks/useApi", () => ({
 					id: 1,
 					name: "Zulu",
 					location: "Tokyo",
-					ats_type: "fake",
 					active: true,
+					board_count: 1,
 					role_count: 5,
-					adapter_status: "healthy",
 					freshness_status: "fresh",
+					last_scan_attempt_at: "2026-09-01T12:00:00Z",
+					last_new_role_discovery_at: "2026-09-01T12:00:00Z",
+					career_boards: [
+						{
+							id: 10,
+							provider: "fake",
+							board_identifier: "zulu",
+							canonical_url: "https://zulu.test",
+							active: true,
+							adapter_status: "healthy",
+							freshness_status: "fresh",
+							last_scan_attempt_at: "2026-09-01T12:00:00Z",
+							last_successful_scan_at: "2026-09-01T12:00:00Z",
+							last_scan_failure_detail: null,
+							last_new_role_discovery_at: "2026-09-01T12:00:00Z",
+						},
+					],
 				},
 				{
 					id: 2,
 					name: "Alpha",
 					location: "Remote",
-					ats_type: "other",
 					active: false,
+					board_count: 0,
 					role_count: 0,
-					adapter_status: "unsupported",
 					freshness_status: "not_applicable",
-				},
-				{
-					id: 3,
-					name: "Broken",
-					location: "Tokyo",
-					ats_type: "fake",
-					active: true,
-					role_count: 2,
-					adapter_status: "failing",
-					freshness_status: "stale",
-					last_scan_failure_detail: "Timeout",
-				},
-				{
-					id: 4,
-					name: "New",
-					location: "Tokyo",
-					ats_type: "fake",
-					active: true,
-					role_count: 1,
-					adapter_status: "unknown",
-					freshness_status: "no_activity_yet",
+					last_scan_attempt_at: null,
+					last_new_role_discovery_at: null,
+					career_boards: [],
 				},
 			],
 		},
@@ -57,29 +54,37 @@ vi.mock("../hooks/useApi", () => ({
 	}),
 	useUpdateCompanyActive: () => ({ mutate, isPending: false }),
 	useUpdateCompaniesActiveBulk: () => ({ mutate, isPending: false }),
+	useUpdateCareerBoardActive: () => ({ mutate, isPending: false }),
+	useUpdateCompanyDetails: () => ({ mutate, isPending: false }),
+	useDeleteCompany: () => ({ mutate, isPending: false }),
+	useCreateCareerBoard: () => ({ mutate, isPending: false }),
+	useUpdateCareerBoardDetails: () => ({ mutate, isPending: false }),
+	useDeleteCareerBoard: () => ({ mutate, isPending: false }),
+	useDiscoverCareerBoards: () => ({
+		data: null,
+		isPending: false,
+		error: null,
+		mutate,
+		reset: vi.fn(),
+	}),
+	useRegisterCareerBoards: () => ({ isPending: false, mutate }),
 	useLogout: () => ({ mutate, isPending: false }),
 }));
 
 describe("CompaniesPage", () => {
-	it("sorts by role count by default and exposes status explanations", async () => {
+	it("shows a compact company index and board-level operational details", async () => {
 		const { user } = renderWithProviders(<CompaniesPage />);
-		expect(
-			screen.getByLabelText("No new roles found in 30 days"),
-		).toBeVisible();
-		expect(screen.getByLabelText("Latest scan failed: Timeout")).toBeVisible();
 		expect(
 			screen.getByLabelText("Freshness is not tracked for this company"),
 		).toBeVisible();
-		expect(screen.getAllByRole("row")[1]).toHaveTextContent("Zulu");
-		await user.click(screen.getByRole("button", { name: /^Company$/ }));
-		const names = screen
-			.getAllByRole("row")
-			.slice(1)
-			.map((row) => row.textContent);
-		expect(names[0]).toContain("Alpha");
 		await user.click(screen.getByLabelText("Select Alpha"));
-		expect(screen.getByRole("button", { name: /enable 1/i })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Enable" })).toBeEnabled();
 		await user.click(screen.getByRole("switch", { name: "Zulu enabled" }));
 		expect(mutate).toHaveBeenCalledWith({ id: 1, active: false });
+		await user.click(
+			screen.getByRole("button", { name: "Manage Zulu career boards" }),
+		);
+		expect(screen.getByText("https://zulu.test")).toBeVisible();
+		expect(screen.getByText("Latest discovery")).toBeVisible();
 	});
 });
