@@ -3,17 +3,26 @@ title: Upgrades and backups
 description: Protect the Jobmatcha data volume and update predictably.
 ---
 
+## Upgrade a published image
+
+Back up the data volume, then pull and start the latest published image:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Database migrations run when Jobmatcha starts. Confirm the updated instance works as expected before removing any backup. The published-image Compose example uses `ghcr.io/caslus/jobmatcha:latest`; pin the image to a specific published version if you need a controlled release cadence.
+
 ## Upgrade a source checkout
 
-The supplied Compose file builds the checked-out source. Back up the data volume, then update the checkout and rebuild the service:
+The repository's supplied Compose file builds the checked-out source. Back up the data volume, then update the checkout and rebuild the service:
 
 ```bash
 git pull --ff-only
 docker compose build
 docker compose up -d
 ```
-
-Database migrations run when Jobmatcha starts. Keep the previous commit available until you have confirmed the updated instance works as expected. The release workflow is future publishing automation; do not rely on a GHCR image until one is publicly available.
 
 ## Back up the data volume
 

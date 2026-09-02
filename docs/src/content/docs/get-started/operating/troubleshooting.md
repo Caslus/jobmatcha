@@ -13,7 +13,7 @@ When using a reverse proxy, make sure the dashboard and `/api` share one public 
 
 ## The container is healthy but no dashboard appears
 
-Check the container logs and confirm that the built frontend directory exists at `STATIC_DIR`. The local Compose build includes it at `/app/web/dist/client`. A locally built binary needs `web/dist/client` or `../web/dist/client`, or an explicit `STATIC_DIR`.
+Check the container logs and confirm that the built frontend directory exists at `STATIC_DIR`. The Compose image includes it at `/app/web/dist/client`. A locally built binary needs `web/dist/client` or `../web/dist/client`, or an explicit `STATIC_DIR`.
 
 ## Scheduled scans do not run
 
