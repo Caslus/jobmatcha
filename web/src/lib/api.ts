@@ -47,10 +47,10 @@ export const api = ky.create({
 			},
 		],
 		beforeError: [
-			async ({ error, request }) => {
+			({ error, request }) => {
 				const httpError = error as HTTPError;
-				if (!httpError.response) return error;
-				const message = responseErrors.get(request);
+				const data = httpError.data as ErrorResponse | undefined;
+				const message = data?.error ?? responseErrors.get(request);
 				if (message) httpError.message = message;
 				return error;
 			},
