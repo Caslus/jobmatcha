@@ -51,6 +51,23 @@ export function useUpdateCompanyActive() {
 	});
 }
 
+export function useUpdateCareerBoardActive() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			companyID,
+			boardID,
+			active,
+		}: {
+			companyID: number;
+			boardID: number;
+			active: boolean;
+		}) => companiesApi.updateBoardActive(companyID, boardID, { active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
 export function useUpdateCompaniesActiveBulk() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -61,6 +78,23 @@ export function useUpdateCompaniesActiveBulk() {
 			companyIDs: number[];
 			active: boolean;
 		}) => companiesApi.updateActiveBulk({ company_ids: companyIDs, active }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
+	});
+}
+
+export function useDiscoverCareerBoards() {
+	return useMutation({
+		mutationFn: (careersURL: string) =>
+			companiesApi.discover({ careers_url: careersURL }),
+	});
+}
+
+export function useRegisterCareerBoards() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (data: Parameters<typeof companiesApi.register>[0]) =>
+			companiesApi.register(data),
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: queryKeys.companies.list() }),
 	});

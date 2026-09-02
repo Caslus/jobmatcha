@@ -6,6 +6,9 @@ import type {
 	AIValidateKeyResponse,
 	AuthLoginResponse,
 	AuthStatusResponse,
+	CareerBoardDiscoveryRequest,
+	CareerBoardDiscoveryResponse,
+	CareerBoardRegistrationRequest,
 	ChangePasswordRequest,
 	CompanyActiveUpdateRequest,
 	CompanyBulkActiveUpdateRequest,
@@ -29,9 +32,13 @@ export const api = ky.create({
 	credentials: "same-origin",
 	hooks: {
 		beforeError: [
-			({ error }) => {
+			async ({ error }) => {
 				const httpError = error as HTTPError;
-				const data = httpError.data as ErrorResponse | undefined;
+				if (!httpError.response) return error;
+				const data = (await httpError.response
+					.clone()
+					.json()
+					.catch(() => undefined)) as ErrorResponse | undefined;
 				if (data?.error) {
 					httpError.message = data.error;
 				}
@@ -94,8 +101,22 @@ export const companiesApi = {
 	list: () => api.get("companies").json<CompanyListResponse>(),
 	updateActive: (id: number, data: CompanyActiveUpdateRequest) =>
 		api.patch(`companies/${id}`, { json: data }).json<CompanyListItem>(),
+	updateBoardActive: (
+		companyID: number,
+		boardID: number,
+		data: CompanyActiveUpdateRequest,
+	) =>
+		api
+			.patch(`companies/${companyID}/boards/${boardID}`, { json: data })
+			.json<CompanyListItem>(),
 	updateActiveBulk: (data: CompanyBulkActiveUpdateRequest) =>
 		api.put("companies/active", { json: data }).json<CompanyListResponse>(),
+	discover: (data: CareerBoardDiscoveryRequest) =>
+		api
+			.post("companies/discover", { json: data, timeout: 120_000 })
+			.json<CareerBoardDiscoveryResponse>(),
+	register: (data: CareerBoardRegistrationRequest) =>
+		api.post("companies/register", { json: data }).json<CompanyListResponse>(),
 };
 
 // Settings

@@ -34,6 +34,12 @@ func SeedCompanies(db *gorm.DB) error {
 		if err := db.Where(model.Company{Name: c.Name}).FirstOrCreate(&c).Error; err != nil {
 			return err
 		}
+		if c.ATSType != "" && c.ATSSlug != "" {
+			board := model.CareerBoard{CompanyID: c.ID, Provider: c.ATSType, BoardIdentifier: c.ATSSlug, CanonicalURL: c.CareersURL, Active: c.Active}
+			if err := db.Where("provider = ? AND board_identifier = ?", board.Provider, board.BoardIdentifier).FirstOrCreate(&board).Error; err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

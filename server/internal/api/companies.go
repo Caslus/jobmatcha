@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -10,9 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CompanyHandler struct{ svc *service.CompanyService }
+type CompanyHandler struct {
+	svc        *service.CompanyService
+	discoverer service.CareerBoardDiscoverer
+}
 
-func NewCompanyHandler(svc *service.CompanyService) *CompanyHandler { return &CompanyHandler{svc: svc} }
+func NewCompanyHandler(svc *service.CompanyService, discoverer service.CareerBoardDiscoverer) *CompanyHandler {
+	return &CompanyHandler{svc: svc, discoverer: discoverer}
+}
 
 func (h *CompanyHandler) List(c *gin.Context) {
 	items, err := h.svc.List()
@@ -54,6 +60,67 @@ func (h *CompanyHandler) UpdateActiveBulk(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Could not update companies."})
+		return
+	}
+	h.List(c)
+}
+
+func (h *CompanyHandler) UpdateBoardActive(c *gin.Context) {
+	companyID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || companyID == 0 {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid company ID."})
+		return
+	}
+	boardID, err := strconv.ParseUint(c.Param("boardID"), 10, 64)
+	if err != nil || boardID == 0 {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid board ID."})
+		return
+	}
+	var req model.CareerBoardActiveUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.Active == nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "An active state is required."})
+		return
+	}
+	item, err := h.svc.UpdateBoardActive(uint(companyID), uint(boardID), *req.Active)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.ErrorResponse{Error: "Career board not found."})
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+func (h *CompanyHandler) Discover(c *gin.Context) {
+	var req model.CareerBoardDiscoveryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "A careers URL is required."})
+		return
+	}
+	if h.discoverer == nil {
+		c.JSON(http.StatusServiceUnavailable, model.ErrorResponse{Error: "Career-board discovery is unavailable."})
+		return
+	}
+	result, err := h.discoverer.DiscoverCareerBoards(c.Request.Context(), req.CareersURL)
+	if err != nil {
+		slog.Warn("career board discovery failed", "error", err)
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Could not analyze the careers URL: " + err.Error()})
+		return
+	}
+	if name, err := h.svc.SuggestedEmployerName(result.Candidates); err != nil {
+		slog.Warn("career board employer suggestion failed", "error", err)
+	} else if name != "" {
+		result.EmployerNameSuggestion = name
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *CompanyHandler) RegisterBoards(c *gin.Context) {
+	var req model.CareerBoardRegistrationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Invalid career-board selections."})
+		return
+	}
+	if err := h.svc.RegisterBoards(req.Candidates); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "Could not register career boards."})
 		return
 	}
 	h.List(c)

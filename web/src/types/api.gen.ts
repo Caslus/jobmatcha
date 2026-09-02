@@ -90,6 +90,38 @@ export interface ChangePasswordRequest {
 }
 
 //////////
+// source: career_board.go
+
+/**
+ * BoardIdentity is a provider-normalized external board reference.
+ */
+export interface BoardIdentity {
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
+}
+/**
+ * CareerBoard is an independently managed external job-board source for a
+ * company. Roles remain owned by the company so that changing a source does
+ * not change existing role ownership.
+ */
+export interface CareerBoard {
+  id: number /* uint */;
+  company_id: number /* uint */;
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
+  active: boolean;
+  last_scanned_at?: any /* time.Time */;
+  last_scan_attempt_at?: any /* time.Time */;
+  last_successful_scan_at?: any /* time.Time */;
+  last_scan_failure_detail?: string;
+  last_new_role_discovery_at?: any /* time.Time */;
+  created_at: any /* time.Time */;
+  updated_at: any /* time.Time */;
+}
+
+//////////
 // source: company.go
 
 export interface Company {
@@ -106,6 +138,7 @@ export interface Company {
   last_successful_scan_at?: any /* time.Time */;
   last_scan_failure_detail?: string;
   last_new_role_discovery_at?: any /* time.Time */;
+  career_boards?: CareerBoard[];
   created_at: any /* time.Time */;
   updated_at: any /* time.Time */;
 }
@@ -114,15 +147,29 @@ export interface Company {
 // source: company_response.go
 
 /**
- * CompanyListItem is the management view of one registered job source.
+ * CompanyListItem is the company-level management summary.
  */
 export interface CompanyListItem {
   id: number /* uint */;
   name: string;
   location: string;
-  ats_type: string;
   active: boolean;
+  board_count: number /* int */;
   role_count: number /* int64 */;
+  freshness_status: string;
+  last_scan_attempt_at?: any /* time.Time */;
+  last_new_role_discovery_at?: any /* time.Time */;
+  career_boards: CareerBoardListItem[];
+}
+/**
+ * CareerBoardListItem is one independently managed source for a company.
+ */
+export interface CareerBoardListItem {
+  id: number /* uint */;
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
+  active: boolean;
   adapter_status: string;
   freshness_status: string;
   last_scan_attempt_at?: any /* time.Time */;
@@ -139,6 +186,38 @@ export interface CompanyActiveUpdateRequest {
 export interface CompanyBulkActiveUpdateRequest {
   company_ids: number /* uint */[];
   active?: boolean;
+}
+export interface CareerBoardActiveUpdateRequest {
+  active?: boolean;
+}
+export interface CareerBoardDiscoveryRequest {
+  careers_url: string;
+}
+export interface CareerBoardDiscoveryCandidate {
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
+  evidence_urls: string[];
+  validation_status: string;
+  validation_error?: string;
+}
+export interface CareerBoardDiscoveryResponse {
+  candidates: CareerBoardDiscoveryCandidate[];
+  employer_name_suggestion: string;
+  incomplete: boolean;
+}
+export interface CareerBoardRegistration {
+  company_name: string;
+  careers_url: string;
+  location: string;
+  region: string;
+  provider: string;
+  board_identifier: string;
+  canonical_url: string;
+  separate: boolean;
+}
+export interface CareerBoardRegistrationRequest {
+  candidates: CareerBoardRegistration[];
 }
 
 //////////
