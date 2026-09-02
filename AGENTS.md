@@ -90,6 +90,21 @@ After creating or editing a PR or issue, read it back with `gh pr view` or
 `gh issue view` and confirm that headings, lists, links, and code blocks render
 as intended. Correct the body before reporting the link to the user.
 
+## Commit messages and release versioning
+
+Use Conventional Commits for every commit. The pull-request check enforces this
+format and semantic-release derives versions from it:
+
+- `fix: description` creates a patch release.
+- `feat: description` creates a minor release.
+- Add `BREAKING CHANGE: description` in the footer (or `!` after the type) to
+  create a major release.
+- Use other valid types such as `chore:`, `docs:`, `test:`, and `ci:` for work
+  that does not itself require a release.
+
+Use an optional scope when it makes the affected area clearer, for example
+`feat(scanner): add provider retries`. Keep the subject imperative and concise.
+
 ## Architecture
 
 ### Backend (`server/`)
