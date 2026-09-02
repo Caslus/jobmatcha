@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM node:26.7.0-alpine AS web-build
+ARG BUILDPLATFORM
+
+FROM --platform=$BUILDPLATFORM node:26.7.0-alpine AS web-build
 WORKDIR /src/web
 
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
@@ -9,7 +11,7 @@ RUN npm install --global pnpm@10.23.0 && pnpm install --frozen-lockfile
 COPY web/ ./
 RUN pnpm run build
 
-FROM golang:1.26.6-alpine AS server-build
+FROM --platform=$BUILDPLATFORM golang:1.26.6-alpine AS server-build
 WORKDIR /src/server
 
 ARG TARGETOS
