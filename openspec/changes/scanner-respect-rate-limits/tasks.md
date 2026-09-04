@@ -12,4 +12,5 @@
 ## 3. Validation
 
 - [x] 3.1 Add deterministic transport-based tests for shared cooldown state, `429` retry timing, rate-limit header precedence, and concurrent response updates; verify `mise run server:test` passes.
-- [ ] 3.2 Run the required application validation commands after implementation (`mise run web:check`, `mise run web:typecheck`, `mise run coverage:gate`, `mise run web:build`, and `mise run web:e2e`) and resolve any failures.
+- [x] 3.2 Retry a `429` once after a valid provider cooldown, close the discarded response safely, and add deterministic tests for successful retry, cancellation, and bounded repeated `429` behavior.
+- [ ] 3.3 Run the required application validation commands after implementation (`mise run web:check`, `mise run web:typecheck`, `mise run coverage:gate`, `mise run web:build`, and `mise run web:e2e`) and resolve any failures.
