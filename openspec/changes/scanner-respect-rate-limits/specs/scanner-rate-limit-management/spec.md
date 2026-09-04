@@ -50,3 +50,14 @@ When a scanner request receives HTTP `429` with a valid provider cooldown timing
 #### Scenario: Repeated rate limiting is bounded
 - **WHEN** the retry after a valid cooldown also returns HTTP `429`
 - **THEN** the scanner does not issue a third request and returns that response to the provider
+
+### Requirement: Scanner applies a Workable fallback request limit
+The scanner SHALL limit Workable requests to 10 dispatches per rolling 10-second window when no header-derived cooldown delays a request. The fallback SHALL apply to every Workable scan HTTP call, including markdown description requests, and SHALL not delay requests for other providers.
+
+#### Scenario: Workable response omits rate-limit headers
+- **WHEN** ten Workable requests have been dispatched in the preceding ten seconds and another Workable request is ready to dispatch
+- **THEN** the scanner waits until the oldest dispatch leaves the rolling window before sending that request
+
+#### Scenario: Workable fallback remains provider-scoped
+- **WHEN** Workable is waiting for a fallback-limit slot
+- **THEN** an eligible Greenhouse request proceeds without waiting for the Workable slot
