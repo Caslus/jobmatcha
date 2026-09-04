@@ -58,7 +58,7 @@ func (h *CompanyHandler) UpdateDetails(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "A company name is required."})
 		return
 	}
-	item, err := h.svc.UpdateDetails(id, req.Name, req.Location)
+	item, err := h.svc.UpdateDetails(id, req.Name)
 	if err != nil {
 		handleCompanyMutationError(c, err)
 		return

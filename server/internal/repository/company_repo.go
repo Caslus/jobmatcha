@@ -86,8 +86,8 @@ func (r *CompanyRepo) UpdateBoardActive(companyID, boardID uint, active bool) er
 	return nil
 }
 
-func (r *CompanyRepo) UpdateDetails(id uint, name, location string) error {
-	result := r.db.Model(&model.Company{}).Where("id = ?", id).Updates(map[string]interface{}{"name": name, "location": location})
+func (r *CompanyRepo) UpdateDetails(id uint, name string) error {
+	result := r.db.Model(&model.Company{}).Where("id = ?", id).Update("name", name)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -270,13 +270,9 @@ func (r *CompanyRepo) registerBoardGroup(tx *gorm.DB, selections []model.CareerB
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		region := selection.Region
-		if region == "" {
-			region = "JP"
-		}
 		company := model.Company{ID: targetCompanyID}
 		if targetCompanyID == 0 {
-			company = model.Company{Name: selection.CompanyName, CareersURL: selection.CareersURL, Location: selection.Location, Region: region, Active: true}
+			company = model.Company{Name: selection.CompanyName, CareersURL: selection.CareersURL, Active: true}
 			if err := tx.Where("name = ?", selection.CompanyName).FirstOrCreate(&company).Error; err != nil {
 				return err
 			}

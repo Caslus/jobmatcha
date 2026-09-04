@@ -25,6 +25,9 @@ func Migrate(db *gorm.DB) error {
 	); err != nil {
 		return err
 	}
+	if err := dropRetiredCompanyColumns(db); err != nil {
+		return err
+	}
 
 	if err := backfillCareerBoards(db); err != nil {
 		return err
@@ -33,6 +36,19 @@ func Migrate(db *gorm.DB) error {
 	// Backfill columns that may not exist on older databases
 	// (GORM AutoMigrate doesn't always add columns to existing SQLite tables)
 	return backfillConfigColumns(db)
+}
+
+// dropRetiredCompanyColumns removes company metadata that duplicated the
+// authoritative location stored on each scanned role.
+func dropRetiredCompanyColumns(db *gorm.DB) error {
+	for _, column := range []string{"region", "location"} {
+		if db.Migrator().HasColumn(&model.Company{}, column) {
+			if err := db.Migrator().DropColumn(&model.Company{}, column); err != nil {
+				return fmt.Errorf("dropping companies.%s: %w", column, err)
+			}
+		}
+	}
+	return nil
 }
 
 // backfillCareerBoards preserves legacy single-board sources after upgrading.
