@@ -34,7 +34,7 @@ type workableResponse struct {
 }
 
 type Workable struct {
-	HTTPClient *http.Client
+	HTTPClient HTTPClient
 }
 
 func (p *Workable) Name() string { return "workable" }

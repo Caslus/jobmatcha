@@ -22,6 +22,7 @@ type Engine struct {
 	Repos            *repository.Repositories
 	Registry         *Registry
 	HTTPClient       *http.Client
+	RateLimits       *RateLimitCoordinator
 	Semaphore        chan struct{}
 	ProgressCallback func(completed, total int)
 }
@@ -35,14 +36,15 @@ func NewEngine(db *gorm.DB, repos *repository.Repositories) *Engine {
 		HTTPClient: &http.Client{Timeout: 30 * time.Second},
 		Semaphore:  make(chan struct{}, 5), // max 5 concurrent requests
 	}
+	e.RateLimits = NewRateLimitCoordinator(e.HTTPClient)
 	e.registerBuiltinProviders()
 	return e
 }
 
 func (e *Engine) registerBuiltinProviders() {
 	providers := []Provider{
-		&providers.Workable{HTTPClient: e.HTTPClient},
-		&providers.Greenhouse{HTTPClient: e.HTTPClient},
+		&providers.Workable{HTTPClient: e.RateLimits.Client("workable")},
+		&providers.Greenhouse{HTTPClient: e.RateLimits.Client("greenhouse")},
 	}
 	for _, p := range providers {
 		e.Registry.Register(p)
