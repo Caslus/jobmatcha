@@ -12,7 +12,6 @@ vi.mock("../hooks/useApi", () => ({
 				{
 					id: 1,
 					name: "Zulu",
-					location: "Tokyo",
 					active: true,
 					board_count: 1,
 					role_count: 5,
@@ -38,7 +37,6 @@ vi.mock("../hooks/useApi", () => ({
 				{
 					id: 2,
 					name: "Alpha",
-					location: "Remote",
 					active: false,
 					board_count: 0,
 					role_count: 0,

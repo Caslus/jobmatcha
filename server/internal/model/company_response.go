@@ -6,7 +6,6 @@ import "time"
 type CompanyListItem struct {
 	ID                     uint                  `json:"id"`
 	Name                   string                `json:"name"`
-	Location               string                `json:"location"`
 	Active                 bool                  `json:"active"`
 	BoardCount             int                   `json:"board_count"`
 	RoleCount              int64                 `json:"role_count"`
@@ -40,8 +39,7 @@ type CompanyActiveUpdateRequest struct {
 }
 
 type CompanyDetailsUpdateRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Location string `json:"location"`
+	Name string `json:"name" binding:"required"`
 }
 
 type CompanyBulkActiveUpdateRequest struct {
@@ -84,8 +82,6 @@ type CareerBoardDiscoveryResponse struct {
 type CareerBoardRegistration struct {
 	CompanyName     string `json:"company_name" binding:"required"`
 	CareersURL      string `json:"careers_url" binding:"required"`
-	Location        string `json:"location"`
-	Region          string `json:"region"`
 	Provider        string `json:"provider" binding:"required"`
 	BoardIdentifier string `json:"board_identifier" binding:"required"`
 	CanonicalURL    string `json:"canonical_url" binding:"required"`

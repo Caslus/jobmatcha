@@ -12,7 +12,6 @@ import {
 	ExternalLink,
 	Layers3,
 	type LucideIcon,
-	MapPin,
 	Pencil,
 	Plus,
 	Power,
@@ -65,13 +64,12 @@ function relativeDate(value: string | null) {
 	return value ? timeAgo(value) : "—";
 }
 
-type SortKey = "jobs" | "boards" | "name" | "location" | "activity";
+type SortKey = "jobs" | "boards" | "name" | "activity";
 
 const sortLabels: Record<SortKey, string> = {
 	jobs: "Job count",
 	boards: "Board count",
 	name: "Name",
-	location: "Location",
 	activity: "Latest activity",
 };
 
@@ -119,9 +117,7 @@ export function CompaniesPage() {
 							? a.board_count - b.board_count
 							: sortKey === "activity"
 								? activityTime(a) - activityTime(b)
-								: (sortKey === "name" ? a.name : a.location).localeCompare(
-										sortKey === "name" ? b.name : b.location,
-									);
+								: a.name.localeCompare(b.name);
 				return comparison === 0
 					? a.name.localeCompare(b.name)
 					: comparison * direction;
@@ -330,10 +326,10 @@ export function CompaniesPage() {
 					company={editingCompany}
 					busy={busy}
 					onClose={() => setEditingCompany(null)}
-					onSave={(name, location) => {
+					onSave={(name) => {
 						if (!editingCompany) return;
 						updateCompany.mutate(
-							{ id: editingCompany.id, name, location },
+							{ id: editingCompany.id, name },
 							{ onSuccess: () => setEditingCompany(null) },
 						);
 					}}
@@ -598,15 +594,13 @@ function CompanyEditModal({
 	company: CompanyListItem | null;
 	busy: boolean;
 	onClose: () => void;
-	onSave: (name: string, location: string) => void;
+	onSave: (name: string) => void;
 	onDelete: () => void;
 }) {
 	const [name, setName] = useState("");
-	const [location, setLocation] = useState("");
 	useEffect(() => {
 		if (company) {
 			setName(company.name);
-			setLocation(company.location);
 		}
 	}, [company]);
 	return (
@@ -622,7 +616,7 @@ function CompanyEditModal({
 				className="space-y-4 p-5"
 				onSubmit={(event) => {
 					event.preventDefault();
-					onSave(name, location);
+					onSave(name);
 				}}
 			>
 				<label className="block text-sm text-[#c8d5c8]">
@@ -632,15 +626,6 @@ function CompanyEditModal({
 						required
 						value={name}
 						onChange={(event) => setName(event.target.value)}
-						className="mt-1.5 w-full rounded-xl bg-[#101710] px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
-					/>
-				</label>
-				<label className="block text-sm text-[#c8d5c8]">
-					Location
-					<input
-						aria-label="Company location"
-						value={location}
-						onChange={(event) => setLocation(event.target.value)}
 						className="mt-1.5 w-full rounded-xl bg-[#101710] px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#7dba7a]/40"
 					/>
 				</label>
@@ -868,8 +853,6 @@ function DiscoveryPanel({
 						candidate.board_identifier
 					: employerName.trim(),
 				careers_url: careersURL,
-				location: "",
-				region: "",
 				provider: candidate.provider,
 				board_identifier: candidate.board_identifier,
 				canonical_url: candidate.canonical_url,
@@ -1196,12 +1179,6 @@ function CompanyRow({
 							Disabled
 						</span>
 					)}
-				</div>
-				<div className="mt-1 flex items-center gap-1.5 text-sm text-[#8b9b8b]">
-					<MapPin size={14} className="shrink-0 text-[#607060]" />
-					<span className="truncate">
-						{company.location || "Location not set"}
-					</span>
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">

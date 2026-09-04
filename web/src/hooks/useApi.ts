@@ -95,9 +95,8 @@ function useCompanyListMutation<TData, TVariables>(
 }
 
 export function useUpdateCompanyDetails() {
-	return useCompanyListMutation(
-		({ id, name, location }: { id: number; name: string; location: string }) =>
-			companiesApi.updateDetails(id, { name, location }),
+	return useCompanyListMutation(({ id, name }: { id: number; name: string }) =>
+		companiesApi.updateDetails(id, { name }),
 	);
 }
 

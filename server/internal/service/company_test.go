@@ -122,8 +122,8 @@ func TestCompanyServiceManagesCompanyAndCareerBoards(t *testing.T) {
 	}
 	svc := NewCompanyService(repos.Company, boardManagerFake{adapterFake{"fake": true}})
 
-	updated, err := svc.UpdateDetails(company.ID, " Renamed ", " Tokyo ")
-	if err != nil || updated.Name != "Renamed" || updated.Location != "Tokyo" {
+	updated, err := svc.UpdateDetails(company.ID, " Renamed ")
+	if err != nil || updated.Name != "Renamed" {
 		t.Fatalf("UpdateDetails() = %#v, %v", updated, err)
 	}
 	updated, err = svc.CreateBoard(context.Background(), company.ID, model.CareerBoardUpsertRequest{Provider: "FAKE", BoardIdentifier: "primary", CanonicalURL: "https://ignored.example"})

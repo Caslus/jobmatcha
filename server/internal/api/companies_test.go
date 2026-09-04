@@ -214,7 +214,7 @@ func TestCompanyManagementHandlers(t *testing.T) {
 	if w := request(http.MethodPatch, "/companies/1/details", `{}`); w.Code != http.StatusBadRequest {
 		t.Fatalf("missing company name = %d", w.Code)
 	}
-	if w := request(http.MethodPatch, "/companies/1/details", `{"name":" Renamed ","location":" Tokyo "}`); w.Code != http.StatusOK {
+	if w := request(http.MethodPatch, "/companies/1/details", `{"name":" Renamed "}`); w.Code != http.StatusOK {
 		t.Fatalf("update company = %d: %s", w.Code, w.Body.String())
 	}
 	if w := request(http.MethodPost, "/companies/1/boards", `{}`); w.Code != http.StatusBadRequest {
@@ -226,7 +226,7 @@ func TestCompanyManagementHandlers(t *testing.T) {
 	}
 	var item model.CompanyListItem
 	parseJSON(t, w.Body.String(), &item)
-	if item.Name != "Renamed" || item.Location != "Tokyo" || len(item.CareerBoards) != 1 {
+	if item.Name != "Renamed" || len(item.CareerBoards) != 1 {
 		t.Fatalf("created board company = %#v", item)
 	}
 	boardID := item.CareerBoards[0].ID

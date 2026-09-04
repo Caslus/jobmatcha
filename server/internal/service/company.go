@@ -66,12 +66,12 @@ func (s *CompanyService) UpdateActiveBulk(ids []uint, active bool) error {
 	return s.repo.UpdateActiveBulk(ids, active)
 }
 
-func (s *CompanyService) UpdateDetails(id uint, name, location string) (*model.CompanyListItem, error) {
+func (s *CompanyService) UpdateDetails(id uint, name string) (*model.CompanyListItem, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, fmt.Errorf("company name is required")
 	}
-	if err := s.repo.UpdateDetails(id, name, strings.TrimSpace(location)); err != nil {
+	if err := s.repo.UpdateDetails(id, name); err != nil {
 		return nil, err
 	}
 	return s.companyItem(id)
@@ -179,7 +179,6 @@ func (s *CompanyService) toListItem(company *model.Company, roleCount int64) mod
 	return model.CompanyListItem{
 		ID:                     company.ID,
 		Name:                   company.Name,
-		Location:               company.Location,
 		Active:                 company.Active,
 		BoardCount:             len(boards),
 		RoleCount:              roleCount,

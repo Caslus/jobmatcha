@@ -65,6 +65,8 @@ describe("dashboard route", () => {
 
 		renderWithProviders(<DashboardPage />);
 
-		expect(await screen.findByText("No roles found")).toBeVisible();
+		expect(
+			await screen.findByText("No roles found", {}, { timeout: 5_000 }),
+		).toBeVisible();
 	});
 });

@@ -130,8 +130,6 @@ export interface Company {
   careers_url: string;
   ats_type: string;
   ats_slug: string;
-  region: string;
-  location: string;
   active: boolean;
   last_scanned_at?: any /* time.Time */;
   last_scan_attempt_at?: any /* time.Time */;
@@ -152,7 +150,6 @@ export interface Company {
 export interface CompanyListItem {
   id: number /* uint */;
   name: string;
-  location: string;
   active: boolean;
   board_count: number /* int */;
   role_count: number /* int64 */;
@@ -185,7 +182,6 @@ export interface CompanyActiveUpdateRequest {
 }
 export interface CompanyDetailsUpdateRequest {
   name: string;
-  location: string;
 }
 export interface CompanyBulkActiveUpdateRequest {
   company_ids: number /* uint */[];
@@ -223,8 +219,6 @@ export interface CareerBoardDiscoveryResponse {
 export interface CareerBoardRegistration {
   company_name: string;
   careers_url: string;
-  location: string;
-  region: string;
   provider: string;
   board_identifier: string;
   canonical_url: string;
