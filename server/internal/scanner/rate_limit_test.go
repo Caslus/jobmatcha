@@ -81,6 +81,62 @@ func TestProviderHTTPClientHonorsCooldownAndIsolation(t *testing.T) {
 	}
 }
 
+func TestProviderHTTPClientAppliesWorkableFallbackLimit(t *testing.T) {
+	var calls atomic.Int32
+	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return response(req, nil), nil
+	})})
+	coordinator.fallbackLimits["workable"] = requestLimit{maxRequests: 1, window: 60 * time.Millisecond}
+	client := coordinator.Client("workable")
+
+	first, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test/first", nil)
+	resp, err := client.Do(first)
+	if err != nil {
+		t.Fatalf("first request: %v", err)
+	}
+	resp.Body.Close()
+
+	second, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test/second", nil)
+	start := time.Now()
+	resp, err = client.Do(second)
+	if err != nil {
+		t.Fatalf("second request: %v", err)
+	}
+	resp.Body.Close()
+	if elapsed := time.Since(start); elapsed < 45*time.Millisecond {
+		t.Fatalf("second request waited %v, want fallback delay", elapsed)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("transport calls = %d, want 2", got)
+	}
+}
+
+func TestProviderHTTPClientFallbackDoesNotDelayOtherProviders(t *testing.T) {
+	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return response(req, nil), nil
+	})})
+	coordinator.fallbackLimits["workable"] = requestLimit{maxRequests: 1, window: 100 * time.Millisecond}
+
+	workable, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test/workable", nil)
+	resp, err := coordinator.Client("workable").Do(workable)
+	if err != nil {
+		t.Fatalf("workable request: %v", err)
+	}
+	resp.Body.Close()
+
+	greenhouse, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test/greenhouse", nil)
+	start := time.Now()
+	resp, err = coordinator.Client("greenhouse").Do(greenhouse)
+	if err != nil {
+		t.Fatalf("greenhouse request: %v", err)
+	}
+	resp.Body.Close()
+	if elapsed := time.Since(start); elapsed > 40*time.Millisecond {
+		t.Fatalf("other provider waited %v for workable fallback", elapsed)
+	}
+}
+
 func TestProviderHTTPClientCancellationSkipsTransport(t *testing.T) {
 	var calls atomic.Int32
 	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
