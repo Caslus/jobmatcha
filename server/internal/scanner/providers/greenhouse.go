@@ -29,8 +29,12 @@ type greenhouseResponse struct {
 	Jobs []greenhouseJob `json:"jobs"`
 }
 
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 type Greenhouse struct {
-	HTTPClient *http.Client
+	HTTPClient HTTPClient
 }
 
 func (p *Greenhouse) Name() string { return "greenhouse" }
