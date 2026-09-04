@@ -31,6 +31,7 @@ func TestCooldownFromHeaders(t *testing.T) {
 		ok     bool
 	}{
 		{"retry seconds", http.Header{"Retry-After": {"30"}}, now.Add(30 * time.Second), true},
+		{"immediate retry", http.Header{"Retry-After": {"0"}}, now, true},
 		{"retry date", http.Header{"Retry-After": {future.Format(http.TimeFormat)}}, future, true},
 		{"retry wins over reset", http.Header{"Retry-After": {"30"}, "X-RateLimit-Remaining": {"0"}, "X-RateLimit-Reset": {strconv.FormatInt(future.Unix(), 10)}}, now.Add(30 * time.Second), true},
 		{"exhausted epoch reset", http.Header{"X-RateLimit-Remaining": {"0"}, "X-RateLimit-Reset": {strconv.FormatInt(future.Unix(), 10)}}, future, true},
@@ -97,6 +98,77 @@ func TestProviderHTTPClientCancellationSkipsTransport(t *testing.T) {
 	}
 	if got := calls.Load(); got != 0 {
 		t.Fatalf("transport calls = %d, want 0", got)
+	}
+}
+
+func TestProviderHTTPClientRetriesRateLimitedRequest(t *testing.T) {
+	var calls atomic.Int32
+	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if calls.Add(1) == 1 {
+			return &http.Response{StatusCode: http.StatusTooManyRequests, Header: http.Header{"Retry-After": {"0"}}, Body: io.NopCloser(http.NoBody), Request: req}, nil
+		}
+		return response(req, nil), nil
+	})})
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test", nil)
+
+	resp, err := coordinator.Client("workable").Do(req)
+	if err != nil {
+		t.Fatalf("Do() error = %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("transport calls = %d, want 2", got)
+	}
+}
+
+func TestProviderHTTPClientCancellationStopsRateLimitedRetry(t *testing.T) {
+	firstResponse := make(chan struct{})
+	var calls atomic.Int32
+	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		calls.Add(1)
+		close(firstResponse)
+		return &http.Response{StatusCode: http.StatusTooManyRequests, Header: http.Header{"Retry-After": {"1"}}, Body: io.NopCloser(http.NoBody), Request: req}, nil
+	})})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://example.test", nil)
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := coordinator.Client("workable").Do(req)
+		errCh <- err
+	}()
+
+	<-firstResponse
+	cancel()
+	if err := <-errCh; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Do() error = %v, want context cancellation", err)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("transport calls = %d, want 1", got)
+	}
+}
+
+func TestProviderHTTPClientLimitsRateLimitedRetries(t *testing.T) {
+	var calls atomic.Int32
+	coordinator := NewRateLimitCoordinator(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return &http.Response{StatusCode: http.StatusTooManyRequests, Header: http.Header{"Retry-After": {"0"}}, Body: io.NopCloser(http.NoBody), Request: req}, nil
+	})})
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.test", nil)
+
+	resp, err := coordinator.Client("workable").Do(req)
+	if err != nil {
+		t.Fatalf("Do() error = %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusTooManyRequests)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("transport calls = %d, want 2", got)
 	}
 }
 

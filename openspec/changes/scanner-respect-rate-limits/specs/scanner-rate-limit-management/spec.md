@@ -39,3 +39,14 @@ The scanner SHALL retain its configured HTTP request timeout independently of pr
 #### Scenario: Request starts after a rate-limit delay
 - **WHEN** a scanner request waits for a provider cooldown and then starts
 - **THEN** its HTTP request timeout applies from the request execution and not from the start of the cooldown
+
+### Requirement: Scanner retries a rate-limited request once
+When a scanner request receives HTTP `429` with a valid provider cooldown timing signal, the scanner SHALL wait for that cooldown and retry the request once. The retry SHALL remain subject to request-context cancellation and the configured HTTP execution timeout. A `429` without usable timing, or a second `429`, SHALL be returned to the provider without another retry.
+
+#### Scenario: Rate-limited scan request succeeds after cooldown
+- **WHEN** a provider returns HTTP `429` with a valid `Retry-After` or exhausted-quota reset time and the retry returns HTTP `200`
+- **THEN** the scanner returns the successful retry response to the provider and does not record the board as failed for the first `429`
+
+#### Scenario: Repeated rate limiting is bounded
+- **WHEN** the retry after a valid cooldown also returns HTTP `429`
+- **THEN** the scanner does not issue a third request and returns that response to the provider

@@ -14,14 +14,14 @@ The scanner runs boards concurrently with one shared `http.Client` and a global 
 **Non-Goals:**
 
 - Infer limits when the provider supplies no usable retry/reset time.
-- Add retries, persist rate-limit state, expose it through APIs, or alter scan scheduling.
+- Persist rate-limit state, expose it through APIs, or alter scan scheduling.
 - Guarantee support for every provider-specific header convention beyond `Retry-After` and the requested `X-RateLimit-*` set.
 
 ## Decisions
 
 ### Use a provider-keyed HTTP wrapper
 
-Introduce a small scanner-internal request coordinator/wrapper used by built-in provider calls. Before a request it waits on the cooldown held for that provider; after a response it updates that provider's cooldown from headers. This centralizes behavior, covers Workable's detail requests, and avoids duplicating parsing in every adapter.
+Introduce a small scanner-internal request coordinator/wrapper used by built-in provider calls. Before a request it waits on the cooldown held for that provider; after a response it updates that provider's cooldown from headers. On a `429` with usable cooldown timing, it waits and retries once before returning the response. This centralizes behavior, covers Workable's detail requests, and avoids duplicating parsing in every adapter.
 
 Alternative: add rate-limit logic to each adapter. Rejected because every new request path can accidentally omit it and identical parsing would be repeated.
 
@@ -39,7 +39,7 @@ Alternative: global cooldown state. Rejected because an exhausted Workable quota
 
 ### Make delay context-aware and preserve client timeout semantics
 
-Use a timer/select mechanism controlled by the caller context for cooldown waiting. The existing HTTP client's 30-second timeout remains an execution timeout after dispatch; it does not constrain a deliberate pre-request cooldown.
+Use a timer/select mechanism controlled by the caller context for cooldown waiting. The existing HTTP client's 30-second timeout remains an execution timeout after dispatch; it does not constrain a deliberate pre-request cooldown. A `429` retry is bounded to one additional dispatch so persistent provider failures remain visible rather than extending scans indefinitely.
 
 Alternative: sleep directly. Rejected because it cannot promptly observe cancellation and makes tests slow.
 
