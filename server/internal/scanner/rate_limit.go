@@ -12,19 +12,30 @@ import (
 // RateLimitCoordinator serializes provider cooldown state without changing the
 // execution timeout configured on the wrapped HTTP client.
 type RateLimitCoordinator struct {
-	client *http.Client
-	now    func() time.Time
+	client         *http.Client
+	now            func() time.Time
+	fallbackLimits map[string]requestLimit
 
-	mu        sync.Mutex
-	cooldowns map[string]time.Time
+	mu         sync.Mutex
+	cooldowns  map[string]time.Time
+	dispatches map[string][]time.Time
+}
+
+type requestLimit struct {
+	maxRequests int
+	window      time.Duration
 }
 
 // NewRateLimitCoordinator creates a request coordinator for one scanner engine.
 func NewRateLimitCoordinator(client *http.Client) *RateLimitCoordinator {
 	return &RateLimitCoordinator{
-		client:    client,
-		now:       time.Now,
-		cooldowns: make(map[string]time.Time),
+		client: client,
+		now:    time.Now,
+		fallbackLimits: map[string]requestLimit{
+			"workable": {maxRequests: 10, window: 10 * time.Second},
+		},
+		cooldowns:  make(map[string]time.Time),
+		dispatches: make(map[string][]time.Time),
 	}
 }
 
@@ -64,11 +75,49 @@ func (c *ProviderHTTPClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func (c *RateLimitCoordinator) wait(ctx context.Context, provider string) error {
-	c.mu.Lock()
-	cooldown := c.cooldowns[provider]
-	c.mu.Unlock()
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 
-	delay := cooldown.Sub(c.now())
+		now := c.now()
+		c.mu.Lock()
+		cooldown := c.cooldowns[provider]
+		if cooldown.After(now) {
+			c.mu.Unlock()
+			if err := waitFor(ctx, cooldown.Sub(now)); err != nil {
+				return err
+			}
+			continue
+		}
+
+		limit, limited := c.fallbackLimits[provider]
+		if !limited {
+			c.mu.Unlock()
+			return nil
+		}
+
+		dispatches := c.dispatches[provider]
+		cutoff := now.Add(-limit.window)
+		for len(dispatches) > 0 && !dispatches[0].After(cutoff) {
+			dispatches = dispatches[1:]
+		}
+		if len(dispatches) < limit.maxRequests {
+			c.dispatches[provider] = append(dispatches, now)
+			c.mu.Unlock()
+			return nil
+		}
+
+		delay := dispatches[0].Add(limit.window).Sub(now)
+		c.dispatches[provider] = dispatches
+		c.mu.Unlock()
+		if err := waitFor(ctx, delay); err != nil {
+			return err
+		}
+	}
+}
+
+func waitFor(ctx context.Context, delay time.Duration) error {
 	if delay <= 0 {
 		return ctx.Err()
 	}
